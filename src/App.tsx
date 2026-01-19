@@ -16,6 +16,9 @@ import { SaveDialog } from './components/SaveDialog'
 
 type Tab = 'inbox' | 'active' | 'later' | 'saved'
 
+const MAX_ACTIVE_LINKS = 5
+const MAX_ACTIVE_MINUTES = 90
+
 function App() {
   const [links, setLinks] = useState<Link[]>([])
   const [activeTab, setActiveTab] = useState<Tab>('inbox')
@@ -141,6 +144,31 @@ function App() {
   const laterLinks = links.filter(l => l.status === 'later')
   const savedLinks = links.filter(l => l.status === 'done')
 
+  const activeMinutes = activeLinks.reduce((sum, l) => sum + l.estimated_minutes, 0)
+
+  function canAddToActive(link: Link): { allowed: boolean; reason?: string } {
+    if (activeLinks.length >= MAX_ACTIVE_LINKS) {
+      return { allowed: false, reason: `Aktiv lista är full (max ${MAX_ACTIVE_LINKS} länkar). Markera något som klart först.` }
+    }
+    if (activeMinutes + link.estimated_minutes > MAX_ACTIVE_MINUTES) {
+      return { allowed: false, reason: `Länken (${link.estimated_minutes} min) överskrider tidsgränsen. Du har ${MAX_ACTIVE_MINUTES - activeMinutes} min kvar av ${MAX_ACTIVE_MINUTES}.` }
+    }
+    return { allowed: true }
+  }
+
+  function handleMoveToActive(id: string) {
+    const link = links.find(l => l.id === id)
+    if (!link) return
+
+    const check = canAddToActive(link)
+    if (!check.allowed) {
+      setError(check.reason!)
+      return
+    }
+
+    handleUpdateStatus(id, 'active')
+  }
+
   const tabs: { id: Tab; label: string; icon: string; count: number }[] = [
     { id: 'inbox', label: 'Inkorg', icon: '📥', count: inboxLinks.length },
     { id: 'active', label: 'Aktiv', icon: '⚡', count: activeLinks.length },
@@ -197,7 +225,7 @@ function App() {
           {activeTab === 'inbox' && (
             <Inbox
               links={inboxLinks}
-              onMoveToActive={(id) => handleUpdateStatus(id, 'active')}
+              onMoveToActive={handleMoveToActive}
               onMoveToLater={(id) => handleUpdateStatus(id, 'later')}
               onDelete={handleDelete}
             />
@@ -205,6 +233,8 @@ function App() {
           {activeTab === 'active' && (
             <ActiveList
               links={activeLinks}
+              maxLinks={MAX_ACTIVE_LINKS}
+              maxMinutes={MAX_ACTIVE_MINUTES}
               onMarkDone={handleMarkDone}
               onMoveToLater={(id) => handleUpdateStatus(id, 'later')}
             />
@@ -212,7 +242,7 @@ function App() {
           {activeTab === 'later' && (
             <Later
               links={laterLinks}
-              onMoveToActive={(id) => handleUpdateStatus(id, 'active')}
+              onMoveToActive={handleMoveToActive}
               onMarkDone={handleMarkDone}
               onDelete={handleDelete}
             />

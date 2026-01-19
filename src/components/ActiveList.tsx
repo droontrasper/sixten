@@ -7,18 +7,23 @@ import { LinkCard } from './LinkCard'
 
 interface ActiveListProps {
   links: Link[]
+  maxLinks: number
+  maxMinutes: number
   onMarkDone: (link: Link) => void
   onMoveToLater: (id: string) => void
 }
 
-export function ActiveList({ links, onMarkDone, onMoveToLater }: ActiveListProps) {
+export function ActiveList({ links, maxLinks, maxMinutes, onMarkDone, onMoveToLater }: ActiveListProps) {
   const totalMinutes = links.reduce((sum, link) => sum + link.estimated_minutes, 0)
+  const linksFull = links.length >= maxLinks
+  const minutesFull = totalMinutes >= maxMinutes
 
   if (links.length === 0) {
     return (
       <div className="text-center py-12 text-stone-400">
         <p>Inga aktiva länkar</p>
         <p className="text-sm mt-1">Flytta länkar från inkorgen hit</p>
+        <p className="text-xs mt-2 text-stone-300">Max {maxLinks} länkar • Max {maxMinutes} min</p>
       </div>
     )
   }
@@ -26,12 +31,20 @@ export function ActiveList({ links, onMarkDone, onMoveToLater }: ActiveListProps
   return (
     <div>
       <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-        <p className="text-blue-800 font-medium">
-          Total tid: {totalMinutes} minuter
-          <span className="text-blue-600 font-normal ml-2">
-            ({links.length} {links.length === 1 ? 'länk' : 'länkar'})
-          </span>
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-blue-800 font-medium">
+            <span className={linksFull ? 'text-amber-600' : ''}>
+              {links.length}/{maxLinks} länkar
+            </span>
+            <span className="text-blue-400 mx-2">•</span>
+            <span className={minutesFull ? 'text-amber-600' : ''}>
+              {totalMinutes}/{maxMinutes} min
+            </span>
+          </p>
+          {(linksFull || minutesFull) && (
+            <span className="text-xs text-amber-600 font-medium">Full kapacitet</span>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">
