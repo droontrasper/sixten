@@ -95,6 +95,7 @@ function App() {
   }
 
   async function handleUpdateStatus(id: string, status: LinkStatus) {
+    setError(null)
     try {
       const updated = await updateLinkStatus(id, status)
       setLinks(prev => prev.map(l => l.id === id ? updated : l))
@@ -104,6 +105,7 @@ function App() {
   }
 
   async function handleDelete(id: string) {
+    setError(null)
     try {
       await deleteLink(id)
       setLinks(prev => prev.filter(l => l.id !== id))
