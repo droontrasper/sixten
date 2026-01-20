@@ -1,0 +1,23 @@
+{
+  "name": "Sixten",
+  "short_name": "Sixten",
+  "description": "Din lugna innehållskö",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5A962",
+  "theme_color": "#F5A962",
+  "icons": [
+    {
+      "src": "/sixten-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/sixten-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
