@@ -7,7 +7,7 @@ import type { Link, LinkStatus } from './types'
 import { getLinks, createLink, updateLinkStatus, deleteLink, saveTags, updateTags } from './services/supabase'
 import { fetchPageContent } from './services/jina'
 import { analyzeContent } from './services/claude'
-import { AddLink } from './components/AddLink'
+import { AddLink, type AddLinkResult } from './components/AddLink'
 import { Inbox } from './components/Inbox'
 import { ActiveList } from './components/ActiveList'
 import { Later } from './components/Later'
@@ -59,7 +59,7 @@ function App() {
     }
   }
 
-  async function handleAddLink(url: string) {
+  async function handleAddLink({ url, manualText, skipAnalysis }: AddLinkResult) {
     setIsLoading(true)
     setError(null)
 
@@ -73,22 +73,53 @@ function App() {
         return
       }
 
-      const { content } = await fetchPageContent(url)
-      const analysis = await analyzeContent(content)
+      let newLink: Link
 
-      const newLink = await createLink({
-        url,
-        title: analysis.titel,
-        summary: analysis.sammanfattning,
-        content_type: analysis.typ,
-        estimated_minutes: analysis.tidsuppskattning_minuter,
-        status: 'inbox',
-      })
+      if (skipAnalysis) {
+        // LinkedIn-post utan manuell text - spara med minimal metadata
+        const urlTitle = extractLinkedInTitle(url)
+        newLink = await createLink({
+          url,
+          title: urlTitle || 'LinkedIn-inlägg',
+          summary: 'LinkedIn-inlägg (ingen sammanfattning tillgänglig)',
+          content_type: 'artikel',
+          estimated_minutes: 5,
+          status: 'inbox',
+        })
+      } else if (manualText) {
+        // LinkedIn-post med manuell text - analysera texten
+        const analysis = await analyzeContent(manualText)
+        newLink = await createLink({
+          url,
+          title: analysis.titel,
+          summary: analysis.sammanfattning,
+          content_type: analysis.typ,
+          estimated_minutes: analysis.tidsuppskattning_minuter,
+          status: 'inbox',
+        })
 
-      // Spara AI-genererade taggar om de finns
-      if (analysis.taggar && analysis.taggar.length > 0) {
-        const tags = await saveTags(newLink.id, analysis.taggar, true)
-        newLink.tags = tags
+        if (analysis.taggar && analysis.taggar.length > 0) {
+          const tags = await saveTags(newLink.id, analysis.taggar, true)
+          newLink.tags = tags
+        }
+      } else {
+        // Vanlig länk - hämta innehåll och analysera
+        const { content } = await fetchPageContent(url)
+        const analysis = await analyzeContent(content)
+
+        newLink = await createLink({
+          url,
+          title: analysis.titel,
+          summary: analysis.sammanfattning,
+          content_type: analysis.typ,
+          estimated_minutes: analysis.tidsuppskattning_minuter,
+          status: 'inbox',
+        })
+
+        if (analysis.taggar && analysis.taggar.length > 0) {
+          const tags = await saveTags(newLink.id, analysis.taggar, true)
+          newLink.tags = tags
+        }
       }
 
       setLinks(prev => [newLink, ...prev])
@@ -98,6 +129,16 @@ function App() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  function extractLinkedInTitle(url: string): string | null {
+    // Försök extrahera författarnamn från LinkedIn-URL
+    // Format: linkedin.com/posts/username_activity-id
+    const match = url.match(/linkedin\.com\/posts\/([^_]+)/)
+    if (match) {
+      return `LinkedIn-inlägg av ${match[1]}`
+    }
+    return null
   }
 
   async function handleUpdateStatus(id: string, status: LinkStatus) {
