@@ -13,9 +13,9 @@
 - [ ] Smart länkhantering: Om användaren klistrar in en titel istället för URL, sök efter innehållet och föreslå rätt länk
 - [ ] Länkhistorik: Kom ihåg alla hanterade länkar och varna om användaren försöker lägga till en länk som redan hanterats tidigare
 - [ ] Sorteringsvy med swipe-gränssnitt
-- [ ] Max 5 objekt / 90 min-begränsning i Aktiv lista
+- [x] Max 5 objekt / 90 min-begränsning i Aktiv lista
 - [ ] Anteckningar på sparade länkar
-- [ ] Taggning av innehåll
+- [x] Taggning av innehåll
 
 ## Prio 3 - Framtida funktioner
 - [ ] Autentisering via Supabase Auth

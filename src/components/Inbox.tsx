@@ -10,9 +10,11 @@ interface InboxProps {
   onMoveToActive: (id: string) => void
   onMoveToLater: (id: string) => void
   onDelete: (id: string) => void
+  onAddTag: (linkId: string, tagName: string) => void
+  onRemoveTag: (linkId: string, tagId: string) => void
 }
 
-export function Inbox({ links, onMoveToActive, onMoveToLater, onDelete }: InboxProps) {
+export function Inbox({ links, onMoveToActive, onMoveToLater, onDelete, onAddTag, onRemoveTag }: InboxProps) {
   if (links.length === 0) {
     return (
       <div className="text-center py-16 text-stone-400">
@@ -29,6 +31,9 @@ export function Inbox({ links, onMoveToActive, onMoveToLater, onDelete }: InboxP
         <LinkCard
           key={link.id}
           link={link}
+          tagsEditable={true}
+          onAddTag={(tagName) => onAddTag(link.id, tagName)}
+          onRemoveTag={(tagId) => onRemoveTag(link.id, tagId)}
           actions={
             <>
               <button

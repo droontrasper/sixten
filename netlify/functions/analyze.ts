@@ -12,7 +12,8 @@ const ANALYSIS_PROMPT = `Analysera följande innehåll och svara ENDAST med JSON
   "titel": "innehållets titel",
   "sammanfattning": "2-3 meningar som beskriver innehållet",
   "typ": "artikel" | "video" | "podd",
-  "tidsuppskattning_minuter": nummer
+  "tidsuppskattning_minuter": nummer,
+  "taggar": ["tagg1", "tagg2", "tagg3"]
 }
 
 Regler:
@@ -20,6 +21,9 @@ Regler:
 - "tidsuppskattning_minuter" ska vara en rimlig uppskattning av hur lång tid det tar att konsumera innehållet
 - För artiklar: uppskatta baserat på textlängd (ca 200 ord/minut)
 - För video/podd: försök hitta längden i innehållet, annars uppskatta baserat på typ
+- "taggar" ska vara 2-4 relevanta taggar som beskriver innehållet
+- Varje tagg ska vara 1-2 ord, kort och beskrivande
+- Exempel på taggar: "AI", "Machine Learning", "Business", "Tutorial", "Research", "Produktivitet", "Programmering"
 
 Innehåll att analysera:
 `
@@ -29,6 +33,7 @@ interface ClaudeAnalysis {
   sammanfattning: string
   typ: 'artikel' | 'video' | 'podd'
   tidsuppskattning_minuter: number
+  taggar?: string[]
 }
 
 export const handler: Handler = async (event) => {
@@ -162,6 +167,15 @@ export const handler: Handler = async (event) => {
   }
 
   analysis.tidsuppskattning_minuter = Math.max(1, Math.round(analysis.tidsuppskattning_minuter))
+
+  // Validera taggar - säkerställ att det är en array med 2-4 strängar
+  if (!Array.isArray(analysis.taggar)) {
+    analysis.taggar = []
+  } else {
+    analysis.taggar = analysis.taggar
+      .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+      .slice(0, 4)
+  }
 
   return {
     statusCode: 200,

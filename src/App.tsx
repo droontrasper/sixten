@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react'
 import type { Link, LinkStatus } from './types'
-import { getLinks, createLink, updateLinkStatus, deleteLink } from './services/supabase'
+import { getLinks, createLink, updateLinkStatus, deleteLink, saveTags, updateTags } from './services/supabase'
 import { fetchPageContent } from './services/jina'
 import { analyzeContent } from './services/claude'
 import { AddLink } from './components/AddLink'
@@ -84,6 +84,12 @@ function App() {
         estimated_minutes: analysis.tidsuppskattning_minuter,
         status: 'inbox',
       })
+
+      // Spara AI-genererade taggar om de finns
+      if (analysis.taggar && analysis.taggar.length > 0) {
+        const tags = await saveTags(newLink.id, analysis.taggar, true)
+        newLink.tags = tags
+      }
 
       setLinks(prev => [newLink, ...prev])
       setActiveTab('inbox')
@@ -171,6 +177,44 @@ function App() {
     handleUpdateStatus(id, 'active')
   }
 
+  async function handleAddTag(linkId: string, tagName: string) {
+    try {
+      const link = links.find(l => l.id === linkId)
+      if (!link) return
+
+      const existingTags = link.tags || []
+      if (existingTags.length >= 10) return
+      if (existingTags.some(t => t.tag_name.toLowerCase() === tagName.toLowerCase())) return
+
+      const [newTag] = await saveTags(linkId, [tagName], false)
+      setLinks(prev => prev.map(l =>
+        l.id === linkId
+          ? { ...l, tags: [...(l.tags || []), newTag] }
+          : l
+      ))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kunde inte lägga till tagg')
+    }
+  }
+
+  async function handleRemoveTag(linkId: string, tagId: string) {
+    try {
+      const link = links.find(l => l.id === linkId)
+      if (!link) return
+
+      const remainingTags = (link.tags || []).filter(t => t.id !== tagId)
+      await updateTags(linkId, remainingTags.map(t => ({ name: t.tag_name, ai_suggested: t.ai_suggested })))
+
+      setLinks(prev => prev.map(l =>
+        l.id === linkId
+          ? { ...l, tags: remainingTags }
+          : l
+      ))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kunde inte ta bort tagg')
+    }
+  }
+
   const tabs: { id: Tab; label: string; icon: string; count: number }[] = [
     { id: 'inbox', label: 'Inkorg', icon: '📥', count: inboxLinks.length },
     { id: 'active', label: 'Aktiv', icon: '⚡', count: activeLinks.length },
@@ -230,6 +274,8 @@ function App() {
               onMoveToActive={handleMoveToActive}
               onMoveToLater={(id) => handleUpdateStatus(id, 'later')}
               onDelete={handleDelete}
+              onAddTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
             />
           )}
           {activeTab === 'active' && (

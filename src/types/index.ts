@@ -7,6 +7,14 @@ export type ContentType = 'artikel' | 'video' | 'podd'
 
 export type LinkStatus = 'inbox' | 'active' | 'later' | 'done' | 'deleted'
 
+export interface Tag {
+  id: string
+  link_id: string
+  tag_name: string
+  ai_suggested: boolean
+  created_at: string
+}
+
 export interface Link {
   id: string
   user_id: string
@@ -19,6 +27,7 @@ export interface Link {
   note: string | null
   created_at: string
   updated_at: string
+  tags?: Tag[]
 }
 
 export interface LinkInsert {
@@ -36,4 +45,5 @@ export interface ClaudeAnalysis {
   sammanfattning: string
   typ: ContentType
   tidsuppskattning_minuter: number
+  taggar?: string[]
 }

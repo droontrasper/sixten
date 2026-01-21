@@ -3,7 +3,7 @@
  * Hanterar CRUD-operationer för länkar.
  */
 import { createClient } from '@supabase/supabase-js'
-import type { Link, LinkInsert, LinkStatus } from '../types'
+import type { Link, LinkInsert, LinkStatus, Tag } from '../types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -19,7 +19,16 @@ const DEFAULT_USER_ID = 'user_1'
 export async function getLinks(status?: LinkStatus): Promise<Link[]> {
   let query = supabase
     .from('links')
-    .select('*')
+    .select(`
+      *,
+      link_tags (
+        id,
+        link_id,
+        tag_name,
+        ai_suggested,
+        created_at
+      )
+    `)
     .eq('user_id', DEFAULT_USER_ID)
     .order('created_at', { ascending: false })
 
@@ -33,7 +42,14 @@ export async function getLinks(status?: LinkStatus): Promise<Link[]> {
     throw new Error(`Kunde inte hämta länkar: ${error.message}`)
   }
 
-  return data || []
+  // Mappa link_tags till tags för varje länk
+  const links = (data || []).map((link: Link & { link_tags?: Tag[] }) => ({
+    ...link,
+    tags: link.link_tags || [],
+    link_tags: undefined,
+  }))
+
+  return links
 }
 
 export async function createLink(link: LinkInsert): Promise<Link> {
@@ -89,4 +105,74 @@ export async function deleteLink(id: string): Promise<void> {
   if (error) {
     throw new Error(`Kunde inte ta bort länk: ${error.message}`)
   }
+}
+
+export async function saveTags(linkId: string, tags: string[], aiSuggested: boolean = true): Promise<Tag[]> {
+  if (tags.length === 0) return []
+
+  const tagRows = tags.map(tag => ({
+    link_id: linkId,
+    tag_name: tag,
+    ai_suggested: aiSuggested,
+  }))
+
+  const { data, error } = await supabase
+    .from('link_tags')
+    .insert(tagRows)
+    .select()
+
+  if (error) {
+    throw new Error(`Kunde inte spara taggar: ${error.message}`)
+  }
+
+  return data || []
+}
+
+export async function updateTags(
+  linkId: string,
+  tags: { name: string; ai_suggested: boolean }[]
+): Promise<Tag[]> {
+  // Ta bort befintliga taggar
+  const { error: deleteError } = await supabase
+    .from('link_tags')
+    .delete()
+    .eq('link_id', linkId)
+
+  if (deleteError) {
+    throw new Error(`Kunde inte uppdatera taggar: ${deleteError.message}`)
+  }
+
+  if (tags.length === 0) return []
+
+  // Lägg till nya taggar
+  const tagRows = tags.map(tag => ({
+    link_id: linkId,
+    tag_name: tag.name,
+    ai_suggested: tag.ai_suggested,
+  }))
+
+  const { data, error } = await supabase
+    .from('link_tags')
+    .insert(tagRows)
+    .select()
+
+  if (error) {
+    throw new Error(`Kunde inte spara taggar: ${error.message}`)
+  }
+
+  return data || []
+}
+
+export async function getTagsForLink(linkId: string): Promise<Tag[]> {
+  const { data, error } = await supabase
+    .from('link_tags')
+    .select('*')
+    .eq('link_id', linkId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    throw new Error(`Kunde inte hämta taggar: ${error.message}`)
+  }
+
+  return data || []
 }
