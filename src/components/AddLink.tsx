@@ -2,8 +2,27 @@
  * Formulär för att lägga till nya länkar.
  * Visar laddningsindikator under AI-analys.
  * Specialhantering för LinkedIn-posts som kräver manuell text-input.
+ * Auto-kompletterar URL:er utan protokoll (gp.se → https://gp.se)
  */
 import { useState } from 'react'
+
+/**
+ * Normaliserar URL genom att lägga till https:// om det saknas
+ */
+function normalizeInputUrl(input: string): string {
+  const trimmed = input.trim()
+
+  // Om redan har protokoll, returnera som den är
+  if (trimmed.match(/^https?:\/\//i)) {
+    return trimmed
+  }
+
+  // Ta bort eventuell www. i början för att sedan lägga till https://
+  const withoutWww = trimmed.replace(/^www\./i, '')
+
+  // Lägg till https://
+  return `https://${withoutWww}`
+}
 
 export interface AddLinkResult {
   url: string
@@ -32,14 +51,14 @@ export function AddLink({ onAdd, isLoading }: AddLinkProps) {
     e.preventDefault()
     if (!url.trim() || isLoading) return
 
-    const trimmedUrl = url.trim()
+    const normalizedUrl = normalizeInputUrl(url.trim())
 
-    if (isLinkedInPost(trimmedUrl)) {
-      setPendingUrl(trimmedUrl)
+    if (isLinkedInPost(normalizedUrl)) {
+      setPendingUrl(normalizedUrl)
       setStep('linkedin-prompt')
       setUrl('')
     } else {
-      await onAdd({ url: trimmedUrl })
+      await onAdd({ url: normalizedUrl })
       setUrl('')
     }
   }
@@ -143,10 +162,10 @@ export function AddLink({ onAdd, isLoading }: AddLinkProps) {
     <form onSubmit={handleSubmit} className="mb-8">
       <div className="flex gap-3">
         <input
-          type="url"
+          type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="Klistra in en länk..."
+          placeholder="Klistra in en länk (t.ex. gp.se eller https://...)..."
           disabled={isLoading}
           className="flex-1 px-4 py-3 rounded-lg border border-stone-300 bg-white
                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
