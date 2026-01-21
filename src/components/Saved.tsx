@@ -6,6 +6,7 @@
 import { useState, useMemo } from 'react'
 import type { Link } from '../types'
 import { LinkCard } from './LinkCard'
+import { TagFilter } from './TagFilter'
 
 interface SavedProps {
   links: Link[]
@@ -14,15 +15,6 @@ interface SavedProps {
 
 export function Saved({ links, onDelete }: SavedProps) {
   const [filterTag, setFilterTag] = useState<string | null>(null)
-
-  // Samla alla unika taggar från alla sparade länkar
-  const allTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    links.forEach(link => {
-      link.tags?.forEach(tag => tagSet.add(tag.tag_name))
-    })
-    return Array.from(tagSet).sort()
-  }, [links])
 
   // Filtrera länkar baserat på vald tagg
   const filteredLinks = useMemo(() => {
@@ -43,37 +35,11 @@ export function Saved({ links, onDelete }: SavedProps) {
 
   return (
     <div>
-      {/* Tagg-filter */}
-      {allTags.length > 0 && (
-        <div className="mb-4 p-3 bg-stone-100 rounded-lg">
-          <p className="text-sm text-stone-500 mb-2">Filtrera på tagg:</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setFilterTag(null)}
-              className={`px-3 py-1 rounded-full text-sm transition-colors
-                ${!filterTag
-                  ? 'bg-stone-700 text-white'
-                  : 'bg-white text-stone-600 border border-stone-300 hover:bg-stone-50'
-                }`}
-            >
-              Visa alla
-            </button>
-            {allTags.map(tag => (
-              <button
-                key={tag}
-                onClick={() => setFilterTag(tag)}
-                className={`px-3 py-1 rounded-full text-sm transition-colors
-                  ${filterTag === tag
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200'
-                  }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <TagFilter
+        links={links}
+        activeFilter={filterTag}
+        onFilterChange={setFilterTag}
+      />
 
       {/* Visar antal resultat om filter är aktivt */}
       {filterTag && (

@@ -85,14 +85,30 @@ export async function updateLinkStatus(id: string, status: LinkStatus, note?: st
     .update(updates)
     .eq('id', id)
     .eq('user_id', DEFAULT_USER_ID)
-    .select()
+    .select(`
+      *,
+      link_tags (
+        id,
+        link_id,
+        tag_name,
+        ai_suggested,
+        created_at
+      )
+    `)
     .single()
 
   if (error) {
     throw new Error(`Kunde inte uppdatera länk: ${error.message}`)
   }
 
-  return data
+  // Mappa link_tags till tags
+  const link: Link = {
+    ...data,
+    tags: data.link_tags || [],
+    link_tags: undefined,
+  }
+
+  return link
 }
 
 export async function deleteLink(id: string): Promise<void> {

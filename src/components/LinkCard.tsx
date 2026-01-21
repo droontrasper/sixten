@@ -54,7 +54,7 @@ export function LinkCard({ link, actions, tagsEditable = false, onAddTag, onRemo
         {link.summary}
       </p>
 
-      {link.tags && link.tags.length > 0 || tagsEditable ? (
+      {(link.tags && link.tags.length > 0) || tagsEditable ? (
         <TagEditor
           tags={link.tags || []}
           editable={tagsEditable}

@@ -2,8 +2,10 @@
  * Aktiv lista med länkar som användaren planerar att konsumera.
  * Visar total tidsuppskattning för alla aktiva länkar.
  */
+import { useState, useMemo } from 'react'
 import type { Link } from '../types'
 import { LinkCard } from './LinkCard'
+import { TagFilter } from './TagFilter'
 
 interface ActiveListProps {
   links: Link[]
@@ -14,6 +16,15 @@ interface ActiveListProps {
 }
 
 export function ActiveList({ links, maxLinks, maxMinutes, onMarkDone, onMoveToLater }: ActiveListProps) {
+  const [filterTag, setFilterTag] = useState<string | null>(null)
+
+  const filteredLinks = useMemo(() => {
+    if (!filterTag) return links
+    return links.filter(link =>
+      link.tags?.some(tag => tag.tag_name === filterTag)
+    )
+  }, [links, filterTag])
+
   const totalMinutes = links.reduce((sum, link) => sum + link.estimated_minutes, 0)
   const linksFull = links.length >= maxLinks
   const minutesFull = totalMinutes >= maxMinutes
@@ -47,8 +58,14 @@ export function ActiveList({ links, maxLinks, maxMinutes, onMarkDone, onMoveToLa
         </div>
       </div>
 
+      <TagFilter
+        links={links}
+        activeFilter={filterTag}
+        onFilterChange={setFilterTag}
+      />
+
       <div className="space-y-4">
-        {links.map((link) => (
+        {filteredLinks.map((link) => (
           <LinkCard
             key={link.id}
             link={link}

@@ -1,9 +1,12 @@
 /**
  * Senare-vyn för parkerade länkar.
  * Länkar som användaren vill spara till senare.
+ * Inkluderar filtrering på taggar.
  */
+import { useState, useMemo } from 'react'
 import type { Link } from '../types'
 import { LinkCard } from './LinkCard'
+import { TagFilter } from './TagFilter'
 
 interface LaterProps {
   links: Link[]
@@ -13,6 +16,15 @@ interface LaterProps {
 }
 
 export function Later({ links, onMoveToActive, onMarkDone, onDelete }: LaterProps) {
+  const [filterTag, setFilterTag] = useState<string | null>(null)
+
+  const filteredLinks = useMemo(() => {
+    if (!filterTag) return links
+    return links.filter(link =>
+      link.tags?.some(tag => tag.tag_name === filterTag)
+    )
+  }, [links, filterTag])
+
   if (links.length === 0) {
     return (
       <div className="text-center py-12 text-stone-400">
@@ -22,38 +34,46 @@ export function Later({ links, onMoveToActive, onMarkDone, onDelete }: LaterProp
   }
 
   return (
-    <div className="space-y-4">
-      {links.map((link) => (
-        <LinkCard
-          key={link.id}
-          link={link}
-          actions={
-            <>
-              <button
-                onClick={() => onMarkDone(link)}
-                className="px-4 py-2 bg-emerald-500 text-white text-sm rounded-lg
-                           hover:bg-emerald-600 transition-colors"
-              >
-                Klar
-              </button>
-              <button
-                onClick={() => onMoveToActive(link.id)}
-                className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg
-                           hover:bg-blue-600 transition-colors"
-              >
-                Flytta till Aktiv lista
-              </button>
-              <button
-                onClick={() => onDelete(link.id)}
-                className="px-4 py-2 bg-stone-200 text-stone-600 text-sm rounded-lg
-                           hover:bg-stone-300 transition-colors"
-              >
-                Kasta
-              </button>
-            </>
-          }
-        />
-      ))}
+    <div>
+      <TagFilter
+        links={links}
+        activeFilter={filterTag}
+        onFilterChange={setFilterTag}
+      />
+
+      <div className="space-y-4">
+        {filteredLinks.map((link) => (
+          <LinkCard
+            key={link.id}
+            link={link}
+            actions={
+              <>
+                <button
+                  onClick={() => onMarkDone(link)}
+                  className="px-4 py-2 bg-emerald-500 text-white text-sm rounded-lg
+                             hover:bg-emerald-600 transition-colors"
+                >
+                  Klar
+                </button>
+                <button
+                  onClick={() => onMoveToActive(link.id)}
+                  className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg
+                             hover:bg-blue-600 transition-colors"
+                >
+                  Flytta till Aktiv lista
+                </button>
+                <button
+                  onClick={() => onDelete(link.id)}
+                  className="px-4 py-2 bg-stone-200 text-stone-600 text-sm rounded-lg
+                             hover:bg-stone-300 transition-colors"
+                >
+                  Kasta
+                </button>
+              </>
+            }
+          />
+        ))}
+      </div>
     </div>
   )
 }
