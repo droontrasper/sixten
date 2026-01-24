@@ -26,11 +26,36 @@
 - [x] LinkedIn-fallback – Manuell text-input när Jina.ai blockeras av LinkedIn
 - [x] Smart URL – Auto-komplettering (skriv "gp.se" → "https://gp.se")
 
-## 📋 Nästa prioritet - Mobilanvändning
-- [ ] iOS Share Extension – Spara från vilken app som helst på iPhone (LinkedIn, Twitter, Safari, etc.)
-- [ ] iOS Shortcut – 2-klicks-lösning via iOS Shortcuts (enklare alternativ)
+## 🔄 Iteration 4 – Bilduppladdning (Pågående)
+
+### Frontend
+- [x] Ny "Lägg till"-design: Ersätt textfält med två knappar
+  - [x] Knapp 1: "🔗 Klistra in länk" (öppnar textfält)
+  - [x] Knapp 2: "📸 Ladda upp bild" (öppnar filväljare)
+- [x] Filväljare för bilder (PNG, JPEG, max 5MB)
+- [x] Konvertera bild till base64
+- [ ] Fallback-dialog vid URL-fel (tre val: text/bild/avbryt)
+- [ ] Fallback-dialog vid bildanalys-fel (manuell input: titel, taggar)
+- [ ] Visa bildminiatyr i alla vyer (Inkorg, Aktiv lista, Senare, Sparat)
+- [ ] Klick på bild → öppna fullstorlek
+
+### Backend
+- [x] AI-bildanalys via Claude API (analyzeImage i claude.ts)
+- [x] Extrahera text från skärmdump
+- [x] Generera: titel, sammanfattning, taggar, uppskattad tid
+- [ ] Hantera fel vid bildanalys
+
+### Databas
+- [x] Lägg till image_data-kolumn i links-tabellen (migration: 005_add_image_data.sql)
+- [x] Spara base64-bild i databasen
+
+**Utanför scope:** iOS Share Extension, Browser Extension, Email, Bulk-upload
 
 ## 📋 Framtida iterationer
+
+### Mobilanvändning
+- [ ] iOS Share Extension – Spara från vilken app som helst på iPhone (LinkedIn, Twitter, Safari, etc.)
+- [ ] iOS Shortcut – 2-klicks-lösning via iOS Shortcuts (enklare alternativ)
 
 ### Email till Sixten (PAUSAD - kräver domän)
 **Varför pausad:** Kräver egen domän för email-mottagning (SendGrid/Mailgun). För komplext för nuvarande fas.

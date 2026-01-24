@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import type { Link, LinkStatus } from './types'
 import { getLinks, createLink, updateLinkStatus, deleteLink, saveTags, updateTags } from './services/supabase'
 import { fetchPageContent } from './services/jina'
-import { analyzeContent } from './services/claude'
+import { analyzeContent, analyzeImage } from './services/claude'
 import { AddLink, type AddLinkResult } from './components/AddLink'
 import { Inbox } from './components/Inbox'
 import { ActiveList } from './components/ActiveList'
@@ -59,67 +59,88 @@ function App() {
     }
   }
 
-  async function handleAddLink({ url, manualText, skipAnalysis }: AddLinkResult) {
+  async function handleAddLink({ url, manualText, skipAnalysis, imageData }: AddLinkResult) {
     setIsLoading(true)
     setError(null)
 
     try {
-      const normalizedUrl = normalizeUrl(url)
-      const existingLink = links.find(l => normalizeUrl(l.url) === normalizedUrl)
-
-      if (existingLink) {
-        setError(`Denna länk finns redan i ${getStatusLabel(existingLink.status)}`)
-        setIsLoading(false)
-        return
-      }
-
       let newLink: Link
 
-      if (skipAnalysis) {
-        // LinkedIn-post utan manuell text - spara med minimal metadata
-        const urlTitle = extractLinkedInTitle(url)
+      if (imageData) {
+        // Bilduppladdning - analysera bilden med Claude Vision
+        const analysis = await analyzeImage(imageData)
         newLink = await createLink({
-          url,
-          title: urlTitle || 'LinkedIn-inlägg',
-          summary: 'LinkedIn-inlägg (ingen sammanfattning tillgänglig)',
-          content_type: 'artikel',
-          estimated_minutes: 5,
-          status: 'inbox',
-        })
-      } else if (manualText) {
-        // LinkedIn-post med manuell text - analysera texten
-        const analysis = await analyzeContent(manualText)
-        newLink = await createLink({
-          url,
+          url: `image://${Date.now()}`, // Unik placeholder-URL för bilder
           title: analysis.titel,
           summary: analysis.sammanfattning,
           content_type: analysis.typ,
           estimated_minutes: analysis.tidsuppskattning_minuter,
           status: 'inbox',
+          image_data: imageData, // Spara base64-bilden
         })
 
         if (analysis.taggar && analysis.taggar.length > 0) {
           const tags = await saveTags(newLink.id, analysis.taggar, true)
           newLink.tags = tags
+        }
+      } else if (url) {
+        const normalizedUrl = normalizeUrl(url)
+        const existingLink = links.find(l => normalizeUrl(l.url) === normalizedUrl)
+
+        if (existingLink) {
+          setError(`Denna länk finns redan i ${getStatusLabel(existingLink.status)}`)
+          setIsLoading(false)
+          return
+        }
+
+        if (skipAnalysis) {
+          // LinkedIn-post utan manuell text - spara med minimal metadata
+          const urlTitle = extractLinkedInTitle(url)
+          newLink = await createLink({
+            url,
+            title: urlTitle || 'LinkedIn-inlägg',
+            summary: 'LinkedIn-inlägg (ingen sammanfattning tillgänglig)',
+            content_type: 'artikel',
+            estimated_minutes: 5,
+            status: 'inbox',
+          })
+        } else if (manualText) {
+          // LinkedIn-post med manuell text - analysera texten
+          const analysis = await analyzeContent(manualText)
+          newLink = await createLink({
+            url,
+            title: analysis.titel,
+            summary: analysis.sammanfattning,
+            content_type: analysis.typ,
+            estimated_minutes: analysis.tidsuppskattning_minuter,
+            status: 'inbox',
+          })
+
+          if (analysis.taggar && analysis.taggar.length > 0) {
+            const tags = await saveTags(newLink.id, analysis.taggar, true)
+            newLink.tags = tags
+          }
+        } else {
+          // Vanlig länk - hämta innehåll och analysera
+          const { content } = await fetchPageContent(url)
+          const analysis = await analyzeContent(content)
+
+          newLink = await createLink({
+            url,
+            title: analysis.titel,
+            summary: analysis.sammanfattning,
+            content_type: analysis.typ,
+            estimated_minutes: analysis.tidsuppskattning_minuter,
+            status: 'inbox',
+          })
+
+          if (analysis.taggar && analysis.taggar.length > 0) {
+            const tags = await saveTags(newLink.id, analysis.taggar, true)
+            newLink.tags = tags
+          }
         }
       } else {
-        // Vanlig länk - hämta innehåll och analysera
-        const { content } = await fetchPageContent(url)
-        const analysis = await analyzeContent(content)
-
-        newLink = await createLink({
-          url,
-          title: analysis.titel,
-          summary: analysis.sammanfattning,
-          content_type: analysis.typ,
-          estimated_minutes: analysis.tidsuppskattning_minuter,
-          status: 'inbox',
-        })
-
-        if (analysis.taggar && analysis.taggar.length > 0) {
-          const tags = await saveTags(newLink.id, analysis.taggar, true)
-          newLink.tags = tags
-        }
+        throw new Error('Ingen URL eller bild angiven')
       }
 
       setLinks(prev => [newLink, ...prev])

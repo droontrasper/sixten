@@ -25,6 +25,7 @@ export interface Link {
   estimated_minutes: number
   status: LinkStatus
   note: string | null
+  image_data: string | null
   created_at: string
   updated_at: string
   tags?: Tag[]
@@ -38,6 +39,7 @@ export interface LinkInsert {
   estimated_minutes: number
   status?: LinkStatus
   user_id?: string
+  image_data?: string
 }
 
 export interface ClaudeAnalysis {
