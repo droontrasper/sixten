@@ -19,51 +19,51 @@
 - [x] GitHub-repo uppsatt (privat)
 - [x] Sixten-ikon (favicon + PWA)
 
-## ✅ Iteration 3 – Klart (AI-taggning + LinkedIn-fallback)
+## ✅ Iteration 3 – Klart (AI-taggning + Smart URL)
 - [x] AI-taggning – Claude föreslår 2-4 taggar automatiskt baserat på innehåll
 - [x] Tweaka taggar – Användaren kan justera AI-föreslagna taggar i alla vyer
-- [x] Taggar i Sparat – Filtrera länkar baserat på taggar
+- [x] Taggar i Sparat – Filtrera länkar baserat på taggar med filter-UI
 - [x] LinkedIn-fallback – Manuell text-input när Jina.ai blockeras av LinkedIn
-- [ ] Browser Extension (Chrome) – Flyttad till framtida iterationer (löser inte iPhone-problemet)
+- [x] Smart URL – Auto-komplettering (skriv "gp.se" → "https://gp.se")
 
-## 🔄 Iteration 4 (Planerad) – Smart länkar + Email-mottagning
-
-### Smart länkhantering
-- [ ] Auto-komplettera URL – Skriv "gp.se" → Sixten förstår och kompletterar till "https://gp.se"
-- [ ] Fuzzy matching – Hantera "www.gp.se", "gp.se/artikel", etc.
-- [ ] Validering – Kolla att URL:en är giltig innan analys
-
-### Email till Sixten (MVP - Steg 1)
-- [ ] SendGrid Inbound Parse – Setup för att ta emot mail
-- [ ] Unik Sixten-email – Generera användar-specifik adress (t.ex. xyz@sixten.app)
-- [ ] Email-parsing – Hitta alla URLs i mailets body + subject
-- [ ] Auto-lägg till – Varje URL analyseras och hamnar i Inbox
-- [ ] Dokumentation – Guide för Outlook-regel (vidarebefordran)
-
-**Text-hantering (SENARE efter testning):**
-- [ ] Besluta om mailets text ska: sparas som anteckning / användas för analys / visas separat
-- [ ] Hantera mail med bara text (ingen URL)
-- [ ] Hantera mail med flera URLs + text
-
-### Teknisk stack
-- SendGrid Inbound Parse (gratis upp till 100 mail/dag)
-- Netlify Function för webhook
-- Supabase för att spara användar-email-adresser
+## 📋 Nästa prioritet - Mobilanvändning
+- [ ] iOS Share Extension – Spara från vilken app som helst på iPhone (LinkedIn, Twitter, Safari, etc.)
+- [ ] iOS Shortcut – 2-klicks-lösning via iOS Shortcuts (enklare alternativ)
 
 ## 📋 Framtida iterationer
 
-### Browser & Mobile
-- [ ] Browser Extension (Chrome/Safari) – 1-klicks-spara från desktop-webbläsare
-- [ ] iOS Share Extension – Spara från vilken app som helst på iPhone (LinkedIn, Twitter, Safari, etc.)
-- [ ] iOS Shortcut – 2-klicks-lösning via iOS Shortcuts
+### Email till Sixten (PAUSAD - kräver domän)
+**Varför pausad:** Kräver egen domän för email-mottagning (SendGrid/Mailgun). För komplext för nuvarande fas.
 
-### Övriga funktioner
+**När vi återupptar:**
+- [ ] Skaffa domän (sixten.app eller subdomain)
+- [ ] SendGrid Inbound Parse setup
+- [ ] Email-webhook implementation (grundkod finns i netlify/functions/email-webhook.ts)
+- [ ] Databas för user_emails (migration finns: 004_add_user_emails.sql)
+- [ ] Besluta om text-hantering (anteckningar/analys/separat visning)
+- [ ] Outlook-regel dokumentation
+
+### Browser & Desktop
+- [ ] Browser Extension (Chrome/Safari) – 1-klicks-spara från desktop-webbläsare
+- [ ] Desktop shortcut/bookmarklet
+
+### Taggning - Förbättringar
+- [ ] Egna fasta taggar (återanvändbara favorittaggar)
+- [ ] Tagg-autocomplete
+- [ ] Sökfunktion på taggar i Sparat
+- [ ] Tagg-statistik
+- [ ] Bulk-taggning
+- [ ] Bättre färgdifferentiering (AI vs manuella taggar)
+- [ ] Mer spacing mellan taggar och knappar
+- [ ] Hover-effekter
+
+### Övriga features
 - [ ] Smart länkhantering (titel → URL-sökning)
 - [ ] Länkhistorik (kom ihåg kastade länkar)
 - [ ] Sorteringsvy med swipe-gränssnitt
 - [ ] AI-kostnadsvisning
 - [ ] YouTube/Podcast-import
-- [ ] Sökfunktion i Sparat
+- [ ] Sökfunktion i Sparat (fulltextsök)
 - [ ] Autentisering via Supabase Auth
 - [ ] Veckans sammanfattning (AI-genererad)
 - [ ] Delning av länkar
