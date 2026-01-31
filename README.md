@@ -1,73 +1,101 @@
-# React + TypeScript + Vite
+# Sixten
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Din lugna innehållskö** - en minimalistisk app för att samla, sortera och spara innehåll du vill konsumera senare.
 
-Currently, two official plugins are available:
+## Funktioner
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Spara innehåll
+- **Klistra in länk** - URL:er analyseras automatiskt med AI (Claude)
+- **Ladda upp bild** - Skärmdumpar analyseras och sparas med AI-genererad titel
+- **LinkedIn-stöd** - Manuell text-input eller bilduppladdning för inloggningsskyddade inlägg
+- **Smart URL** - Skriv bara `gp.se` så läggs `https://` till automatiskt
 
-## React Compiler
+### Fyra vyer
+1. **Inkorg** - Nya länkar som väntar på sortering
+2. **Aktiv lista** - Max 5 länkar / 90 min för fokuserat konsumerande
+3. **Senare** - Parkera länkar för framtiden
+4. **Sparat** - Arkiv med anteckningar och taggar
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### AI-funktioner (Claude)
+- Automatisk titel och sammanfattning
+- Tidsuppskattning baserat på innehåll
+- AI-föreslagna taggar (2-4 st per länk)
+- Bildanalys med textigenkänning
 
-## Expanding the ESLint configuration
+### Övrigt
+- Dubblettskydd
+- PWA-stöd (installera på mobil)
+- Taggfiltrering i Sparat-vyn
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Frontend**: React + TypeScript + Vite
+- **Styling**: Tailwind CSS
+- **Backend**: Netlify Functions
+- **Databas**: Supabase (PostgreSQL)
+- **AI**: Claude API (Anthropic)
+- **Innehållshämtning**: Jina.ai Reader
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Lokal utveckling
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# Installera beroenden
+npm install
+
+# Starta dev-server
+npm run dev
+
+# Bygg för produktion
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Miljövariabler
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Skapa `.env.local` med:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_SUPABASE_URL=din-supabase-url
+VITE_SUPABASE_ANON_KEY=din-anon-key
+VITE_ANTHROPIC_API_KEY=din-claude-api-nyckel
 ```
+
+## Projektstruktur
+
+```
+src/
+├── components/     # React-komponenter
+│   ├── AddLink.tsx       # Formulär för att lägga till länkar/bilder
+│   ├── Landing.tsx       # Startsida
+│   ├── Inbox.tsx         # Inkorg-vy
+│   ├── ActiveList.tsx    # Aktiv lista-vy
+│   ├── Later.tsx         # Senare-vy
+│   ├── Saved.tsx         # Sparat-vy
+│   ├── LinkCard.tsx      # Återanvändbar länkkomponent
+│   ├── ImageModal.tsx    # Fullskärmsvisning av bilder
+│   ├── TagEditor.tsx     # Tagg-hantering
+│   └── SaveDialog.tsx    # "Vill du spara?"-dialog
+├── services/       # API-integrationer
+│   ├── supabase.ts       # Databasoperationer
+│   ├── claude.ts         # AI-analys
+│   └── jina.ts           # Innehållshämtning
+├── types/          # TypeScript-typer
+└── App.tsx         # Huvudkomponent
+
+netlify/
+└── functions/      # Serverless-funktioner
+    └── analyze.ts        # Claude API-proxy
+
+docs/
+└── BACKLOG.md      # Projektbacklog och roadmap
+```
+
+## Deploy
+
+Appen är konfigurerad för Netlify:
+- Bygg-kommando: `npm run build`
+- Publiceringsmapp: `dist`
+- Functions: `netlify/functions`
+
+## Licens
+
+Privat projekt.

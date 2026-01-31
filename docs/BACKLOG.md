@@ -38,6 +38,7 @@
 - [x] Fallback-dialog vid bildanalys-fel (manuell input: titel, taggar)
 - [x] Visa bildminiatyr i alla vyer (Inkorg, Aktiv lista, Senare, Sparat) – via LinkCard
 - [x] Klick på bild → öppna fullstorlek – ImageModal-komponent
+- [x] Landing-sida – ny startsida med logga, snabbåtkomst till Sortering/Aktiv lista
 
 ### Backend
 - [x] AI-bildanalys via Claude API (analyzeImage i claude.ts)
