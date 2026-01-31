@@ -33,6 +33,8 @@ export interface AddLinkResult {
   manualText?: string
   skipAnalysis?: boolean
   imageData?: string // base64-encoded image
+  manualTitle?: string // Manuell titel vid AI-fel
+  manualTags?: string[] // Manuella taggar vid AI-fel
 }
 
 interface AddLinkProps {
@@ -41,7 +43,7 @@ interface AddLinkProps {
   isLoading: boolean
 }
 
-type Step = 'buttons' | 'url-input' | 'linkedin-prompt' | 'linkedin-text-input'
+type Step = 'buttons' | 'url-input' | 'linkedin-prompt' | 'linkedin-text-input' | 'image-fallback'
 
 export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
   const [url, setUrl] = useState('')
@@ -49,6 +51,10 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
   const [pendingUrl, setPendingUrl] = useState('')
   const [manualText, setManualText] = useState('')
   const [imageError, setImageError] = useState<string | null>(null)
+  const [pendingImageData, setPendingImageData] = useState<string | null>(null)
+  const [fallbackTitle, setFallbackTitle] = useState('')
+  const [fallbackTagInput, setFallbackTagInput] = useState('')
+  const [fallbackTags, setFallbackTags] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isLinkedInPost = (checkUrl: string): boolean => {
@@ -156,6 +162,46 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
     setManualText('')
   }
 
+  const resetFallbackState = () => {
+    setStep('buttons')
+    setPendingImageData(null)
+    setFallbackTitle('')
+    setFallbackTagInput('')
+    setFallbackTags([])
+  }
+
+  const handleFallbackAddTag = () => {
+    const tag = fallbackTagInput.trim()
+    if (tag && fallbackTags.length < 4 && !fallbackTags.includes(tag)) {
+      setFallbackTags([...fallbackTags, tag])
+      setFallbackTagInput('')
+    }
+  }
+
+  const handleFallbackRemoveTag = (tagToRemove: string) => {
+    setFallbackTags(fallbackTags.filter(t => t !== tagToRemove))
+  }
+
+  const handleFallbackSubmit = async () => {
+    if (!pendingImageData || !fallbackTitle.trim() || isLoading) return
+    await onAdd({
+      imageData: pendingImageData,
+      manualTitle: fallbackTitle.trim(),
+      manualTags: fallbackTags.length > 0 ? fallbackTags : undefined,
+    })
+    resetFallbackState()
+  }
+
+  // Exponera funktion för att trigga fallback-dialog från parent
+  const showImageFallback = (imageData: string) => {
+    setPendingImageData(imageData)
+    setStep('image-fallback')
+  }
+
+  // Gör showImageFallback tillgänglig via window för parent-komponent
+  // Detta är ett enkelt sätt att kommunicera utan att behöva refs
+  ;(window as unknown as { showImageFallback?: typeof showImageFallback }).showImageFallback = showImageFallback
+
   // Handler för LinkedIn-bilduppladdning
   const handleLinkedInImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -187,6 +233,125 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
       setImageError(error)
       onImageError?.(error)
     }
+  }
+
+  // Image fallback view - manuell input vid AI-fel
+  if (step === 'image-fallback') {
+    return (
+      <div className="mb-8 p-4 bg-amber-50 border-2 border-amber-200 rounded-lg">
+        <h3 className="text-lg font-medium text-amber-800 mb-2">
+          AI-analys misslyckades
+        </h3>
+        <p className="text-sm text-amber-700 mb-4">
+          Bilden kunde inte analyseras automatiskt. Ange titel och taggar manuellt.
+        </p>
+
+        {/* Bildförhandsvisning */}
+        {pendingImageData && (
+          <div className="mb-4">
+            <img
+              src={pendingImageData}
+              alt="Uppladdad bild"
+              className="max-h-32 rounded-lg border border-amber-200"
+            />
+          </div>
+        )}
+
+        {/* Titel */}
+        <input
+          type="text"
+          value={fallbackTitle}
+          onChange={(e) => setFallbackTitle(e.target.value)}
+          placeholder="Ange en titel..."
+          disabled={isLoading}
+          autoFocus
+          className="w-full px-4 py-3 rounded-lg border border-amber-300 bg-white mb-4
+                     focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     text-stone-800 placeholder:text-stone-400"
+        />
+
+        {/* Taggar */}
+        <div className="mb-4">
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={fallbackTagInput}
+              onChange={(e) => setFallbackTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleFallbackAddTag()
+                }
+              }}
+              placeholder="Lägg till tagg..."
+              disabled={isLoading || fallbackTags.length >= 4}
+              className="flex-1 px-3 py-2 rounded-lg border border-amber-300 bg-white text-sm
+                         focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         text-stone-800 placeholder:text-stone-400"
+            />
+            <button
+              type="button"
+              onClick={handleFallbackAddTag}
+              disabled={!fallbackTagInput.trim() || fallbackTags.length >= 4 || isLoading}
+              className="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm
+                         hover:bg-amber-600 transition-colors
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              +
+            </button>
+          </div>
+          {fallbackTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {fallbackTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs"
+                >
+                  {tag}
+                  <button
+                    onClick={() => handleFallbackRemoveTag(tag)}
+                    className="text-amber-500 hover:text-amber-700"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={resetFallbackState}
+            disabled={isLoading}
+            className="px-4 py-2.5 bg-stone-100 text-stone-600 rounded-lg
+                       hover:bg-stone-200 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Avbryt
+          </button>
+          <button
+            onClick={handleFallbackSubmit}
+            disabled={!fallbackTitle.trim() || isLoading}
+            className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-lg font-medium
+                       hover:bg-amber-600 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <LoadingSpinner />
+                Sparar...
+              </>
+            ) : (
+              'Spara'
+            )}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   // LinkedIn text input view (sub-step)

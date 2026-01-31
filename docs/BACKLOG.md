@@ -26,7 +26,7 @@
 - [x] LinkedIn-fallback – Manuell text-input när Jina.ai blockeras av LinkedIn
 - [x] Smart URL – Auto-komplettering (skriv "gp.se" → "https://gp.se")
 
-## 🔄 Iteration 4 – Bilduppladdning (Pågående)
+## ✅ Iteration 4 – Bilduppladdning (Klart)
 
 ### Frontend
 - [x] Ny "Lägg till"-design: Ersätt textfält med två knappar
@@ -34,16 +34,16 @@
   - [x] Knapp 2: "📸 Ladda upp bild" (öppnar filväljare)
 - [x] Filväljare för bilder (PNG, JPEG, max 5MB)
 - [x] Konvertera bild till base64
-- [ ] Fallback-dialog vid URL-fel (tre val: text/bild/avbryt)
-- [ ] Fallback-dialog vid bildanalys-fel (manuell input: titel, taggar)
-- [ ] Visa bildminiatyr i alla vyer (Inkorg, Aktiv lista, Senare, Sparat)
-- [ ] Klick på bild → öppna fullstorlek
+- [x] Fallback-dialog vid URL-fel (tre val: text/bild/avbryt) – LinkedIn-prompt med 3 knappar
+- [x] Fallback-dialog vid bildanalys-fel (manuell input: titel, taggar)
+- [x] Visa bildminiatyr i alla vyer (Inkorg, Aktiv lista, Senare, Sparat) – via LinkCard
+- [x] Klick på bild → öppna fullstorlek – ImageModal-komponent
 
 ### Backend
 - [x] AI-bildanalys via Claude API (analyzeImage i claude.ts)
 - [x] Extrahera text från skärmdump
 - [x] Generera: titel, sammanfattning, taggar, uppskattad tid
-- [ ] Hantera fel vid bildanalys
+- [x] Hantera fel vid bildanalys – triggar fallback-dialog med manuell input
 
 ### Databas
 - [x] Lägg till image_data-kolumn i links-tabellen (migration: 005_add_image_data.sql)

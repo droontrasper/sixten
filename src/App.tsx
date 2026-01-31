@@ -59,29 +59,57 @@ function App() {
     }
   }
 
-  async function handleAddLink({ url, manualText, skipAnalysis, imageData }: AddLinkResult) {
+  async function handleAddLink({ url, manualText, skipAnalysis, imageData, manualTitle, manualTags }: AddLinkResult) {
     setIsLoading(true)
     setError(null)
 
     try {
       let newLink: Link
 
-      if (imageData) {
-        // Bilduppladdning - analysera bilden med Claude Vision
-        const analysis = await analyzeImage(imageData)
+      if (imageData && manualTitle) {
+        // Manuell input efter AI-fel - spara med användarens titel och taggar
         newLink = await createLink({
-          url: `image://${Date.now()}`, // Unik placeholder-URL för bilder
-          title: analysis.titel,
-          summary: analysis.sammanfattning,
-          content_type: analysis.typ,
-          estimated_minutes: analysis.tidsuppskattning_minuter,
+          url: `image://${Date.now()}`,
+          title: manualTitle,
+          summary: 'Bildinnehåll (manuellt tillagd)',
+          content_type: 'artikel',
+          estimated_minutes: 3,
           status: 'inbox',
-          image_data: imageData, // Spara base64-bilden
+          image_data: imageData,
         })
 
-        if (analysis.taggar && analysis.taggar.length > 0) {
-          const tags = await saveTags(newLink.id, analysis.taggar, true)
+        if (manualTags && manualTags.length > 0) {
+          const tags = await saveTags(newLink.id, manualTags, false)
           newLink.tags = tags
+        }
+      } else if (imageData) {
+        // Bilduppladdning - analysera bilden med Claude Vision
+        try {
+          const analysis = await analyzeImage(imageData)
+          newLink = await createLink({
+            url: `image://${Date.now()}`, // Unik placeholder-URL för bilder
+            title: analysis.titel,
+            summary: analysis.sammanfattning,
+            content_type: analysis.typ,
+            estimated_minutes: analysis.tidsuppskattning_minuter,
+            status: 'inbox',
+            image_data: imageData, // Spara base64-bilden
+          })
+
+          if (analysis.taggar && analysis.taggar.length > 0) {
+            const tags = await saveTags(newLink.id, analysis.taggar, true)
+            newLink.tags = tags
+          }
+        } catch {
+          // AI-analys misslyckades - trigga fallback-dialog
+          setIsLoading(false)
+          const showFallback = (window as unknown as { showImageFallback?: (data: string) => void }).showImageFallback
+          if (showFallback) {
+            showFallback(imageData)
+          } else {
+            setError('Kunde inte analysera bilden. Försök igen.')
+          }
+          return
         }
       } else if (url) {
         const normalizedUrl = normalizeUrl(url)
