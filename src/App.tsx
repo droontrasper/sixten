@@ -13,6 +13,7 @@ import { ActiveList } from './components/ActiveList'
 import { Later } from './components/Later'
 import { Saved } from './components/Saved'
 import { SaveDialog } from './components/SaveDialog'
+import { Landing } from './components/Landing'
 
 type Tab = 'inbox' | 'active' | 'later' | 'saved'
 
@@ -25,6 +26,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dialogLink, setDialogLink] = useState<Link | null>(null)
+  const [landingMode, setLandingMode] = useState(true)
 
   useEffect(() => {
     loadLinks()
@@ -172,7 +174,10 @@ function App() {
       }
 
       setLinks(prev => [newLink, ...prev])
-      setActiveTab('inbox')
+      // Gå till inbox endast om vi inte är i landing mode
+      if (!landingMode) {
+        setActiveTab('inbox')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kunde inte lägga till länk')
     } finally {
@@ -312,12 +317,39 @@ function App() {
     { id: 'saved', label: 'Sparat', icon: '⭐', count: savedLinks.length },
   ]
 
+  // Hämta senast tillagda länk för landing page
+  const latestLink = links.length > 0 ? links[0] : null
+
+  // Visa landing page om landingMode är true
+  if (landingMode) {
+    return (
+      <Landing
+        latestLink={latestLink}
+        onAdd={handleAddLink}
+        onGoToSorting={() => setLandingMode(false)}
+        onGoToActive={() => {
+          setLandingMode(false)
+          setActiveTab('active')
+        }}
+        isLoading={isLoading}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <header className="mb-8 -mx-4 -mt-8 px-4 py-6 bg-gradient-to-b from-sky-50 to-stone-50">
-          <h1 className="text-3xl font-bold text-stone-800 mb-1">Sixten</h1>
-          <p className="text-stone-500">Din lugna innehållskö</p>
+          <button
+            onClick={() => setLandingMode(true)}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
+            <img src="/sixten-icon-192.png" alt="Hem" className="w-10 h-10" />
+            <div className="text-left">
+              <h1 className="text-3xl font-bold text-stone-800 mb-1">Sixten</h1>
+              <p className="text-stone-500">Din lugna innehållskö</p>
+            </div>
+          </button>
         </header>
 
         <AddLink onAdd={handleAddLink} isLoading={isLoading} />
