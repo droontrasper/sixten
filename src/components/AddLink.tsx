@@ -41,7 +41,7 @@ interface AddLinkProps {
   isLoading: boolean
 }
 
-type Step = 'buttons' | 'url-input' | 'linkedin-prompt'
+type Step = 'buttons' | 'url-input' | 'linkedin-prompt' | 'linkedin-text-input'
 
 export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
   const [url, setUrl] = useState('')
@@ -146,12 +146,6 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
     resetLinkedInState()
   }
 
-  const handleSaveWithoutText = async () => {
-    if (!pendingUrl || isLoading) return
-    await onAdd({ url: pendingUrl, skipAnalysis: true })
-    resetLinkedInState()
-  }
-
   const handleCancel = () => {
     resetLinkedInState()
   }
@@ -162,73 +156,179 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
     setManualText('')
   }
 
-  // LinkedIn prompt view
-  if (step === 'linkedin-prompt') {
+  // Handler för LinkedIn-bilduppladdning
+  const handleLinkedInImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    e.target.value = ''
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      const error = 'Endast PNG och JPEG stöds.'
+      setImageError(error)
+      onImageError?.(error)
+      return
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      const error = 'Bilden är för stor. Max 5MB.'
+      setImageError(error)
+      onImageError?.(error)
+      return
+    }
+
+    try {
+      const base64 = await fileToBase64(file)
+      await onAdd({ url: pendingUrl, imageData: base64 })
+      setImageError(null)
+      resetLinkedInState()
+    } catch {
+      const error = 'Kunde inte läsa bilden. Försök igen.'
+      setImageError(error)
+      onImageError?.(error)
+    }
+  }
+
+  // LinkedIn text input view (sub-step)
+  if (step === 'linkedin-text-input') {
     return (
       <div className="mb-8 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
         <h3 className="text-lg font-medium text-blue-800 mb-2">
-          LinkedIn-inlägg upptäckt
+          Klistra in text
         </h3>
         <p className="text-sm text-blue-700 mb-4">
-          Jina.ai kan inte läsa LinkedIn-inlägg eftersom de kräver inloggning.
-          Vill du klistra in texten för bättre AI-analys?
+          Kopiera texten från LinkedIn-inlägget och klistra in här.
         </p>
 
         <textarea
           value={manualText}
           onChange={(e) => setManualText(e.target.value)}
-          placeholder="Klistra in inläggets text här (valfritt)..."
+          placeholder="Klistra in inläggets text här..."
           disabled={isLoading}
+          autoFocus
           className="w-full p-3 border-2 border-blue-300 rounded-lg min-h-32 mb-4
                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                      disabled:opacity-50 disabled:cursor-not-allowed
                      text-stone-800 placeholder:text-stone-400"
         />
 
-        <div className="flex gap-3 flex-wrap">
-          {manualText.trim() && (
-            <button
-              onClick={handleAnalyzeWithText}
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg
-                         hover:bg-blue-600 transition-colors
-                         disabled:opacity-50 disabled:cursor-not-allowed
-                         flex items-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <LoadingSpinner />
-                  Analyserar...
-                </>
-              ) : (
-                'Analysera med text'
-              )}
-            </button>
-          )}
+        <div className="flex gap-3">
           <button
-            onClick={handleSaveWithoutText}
+            onClick={() => setStep('linkedin-prompt')}
             disabled={isLoading}
-            className="px-4 py-2 bg-stone-200 text-stone-700 text-sm rounded-lg
-                       hover:bg-stone-300 transition-colors
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       flex items-center gap-2"
+            className="px-4 py-2.5 bg-stone-100 text-stone-600 rounded-lg
+                       hover:bg-stone-200 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading && !manualText.trim() ? (
+            ← Tillbaka
+          </button>
+          <button
+            onClick={handleAnalyzeWithText}
+            disabled={!manualText.trim() || isLoading}
+            className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-lg font-medium
+                       hover:bg-blue-600 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
               <>
                 <LoadingSpinner />
-                Sparar...
+                Analyserar...
               </>
             ) : (
-              'Spara utan text'
+              'Analysera'
             )}
           </button>
+        </div>
+      </div>
+    )
+  }
+
+  // LinkedIn prompt view - tre knappar
+  if (step === 'linkedin-prompt') {
+    return (
+      <div className="mb-8 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+        {/* Hidden file input för LinkedIn-bilduppladdning */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg"
+          onChange={handleLinkedInImageUpload}
+          className="hidden"
+        />
+
+        <h3 className="text-lg font-medium text-blue-800 mb-2">
+          LinkedIn-inlägg upptäckt
+        </h3>
+        <p className="text-sm text-blue-700 mb-4">
+          LinkedIn kräver inloggning för att läsa inlägg. Välj ett alternativ:
+        </p>
+
+        {/* Error message */}
+        {imageError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex justify-between items-center">
+            <span>{imageError}</span>
+            <button
+              onClick={() => setImageError(null)}
+              className="text-red-500 hover:text-red-700 ml-2"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => setStep('linkedin-text-input')}
+            disabled={isLoading}
+            className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg font-medium
+                       hover:bg-blue-600 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <LoadingSpinner />
+                Analyserar...
+              </>
+            ) : (
+              <>
+                <span className="text-lg">📝</span>
+                Klistra in text manuellt
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="w-full px-6 py-3 bg-emerald-500 text-white rounded-lg font-medium
+                       hover:bg-emerald-600 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <LoadingSpinner />
+                Analyserar...
+              </>
+            ) : (
+              <>
+                <span className="text-lg">📸</span>
+                Ladda upp skärmdump
+              </>
+            )}
+          </button>
+
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="px-4 py-2 text-stone-500 text-sm rounded-lg
+            className="w-full px-6 py-2.5 text-stone-500 rounded-lg
                        hover:bg-stone-100 transition-colors
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
           >
+            <span>❌</span>
             Avbryt
           </button>
         </div>
