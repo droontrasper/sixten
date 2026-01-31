@@ -282,8 +282,6 @@ export const handler: Handler = async (event) => {
   }
 
   // Returnera med success-flagga och content_type för bilder
-  const isImageAnalysis = 'type' in requestBody && requestBody.type === 'image'
-
   return {
     statusCode: 200,
     headers: {
