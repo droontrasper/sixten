@@ -114,7 +114,7 @@ export async function updateLinkStatus(id: string, status: LinkStatus, note?: st
 export async function deleteLink(id: string): Promise<void> {
   const { error } = await supabase
     .from('links')
-    .delete()
+    .update({ status: 'deleted', updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', DEFAULT_USER_ID)
 
