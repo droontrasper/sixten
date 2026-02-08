@@ -24,6 +24,7 @@
 - Bildanalys med textigenkänning
 
 ### Övrigt
+- Landing-sida med Sixten-logga och senast tillagd länk
 - Dubblettskydd
 - PWA-stöd (installera på mobil)
 - Taggfiltrering i Sparat-vyn
@@ -93,10 +94,11 @@ docs/
 
 ## Deploy
 
-Appen är konfigurerad för Netlify:
+Appen körs på **[sixten-sorterare.netlify.app](https://sixten-sorterare.netlify.app)** och är konfigurerad för Netlify:
 - Bygg-kommando: `npm run build`
 - Publiceringsmapp: `dist`
 - Functions: `netlify/functions`
+- Automatisk deploy vid push till `main`
 
 ## Licens
 
