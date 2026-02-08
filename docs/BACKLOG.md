@@ -69,34 +69,32 @@
 ### Databas
 - [x] Migration 006: Lägg till `manual_content`-kolumn i links-tabellen
 
-## 🚧 Iteration 6 – Statistik + Egna fasta taggar (Pågående)
+## ✅ Iteration 6 – Statistik + Egna fasta taggar (Klart)
 
 ### Statistik
-- [ ] Ny Stats-komponent: Tre siffror i diskret rad på Landing-sidan
-  - [ ] Inlagda denna vecka (stone-600)
-  - [ ] Klara denna vecka (emerald-600)
-  - [ ] Totalt antal länkar (stone-600)
-- [ ] Logik: Räkna ut statistik från links-tabellen
-  - [ ] Filter på created_at för veckan (Monday-Sunday)
-  - [ ] Filter på status='completed' för klara
-  - [ ] Totalt = COUNT(*) av alla länkar
-- [ ] Villkorlig rendering: Göm hela raden om alla värden är 0
-- [ ] Design: Enkel rad utan kort/skugga, diskret text
+- [x] Tre siffror på Landing-sidan: nya/vecka, hanterade/vecka, i kön
+  - [x] Nya denna vecka (stone-600)
+  - [x] Hanterade denna vecka – done + deleted (emerald-600)
+  - [x] I kön – inbox + active + later (stone-500)
+- [x] StatsBar-komponent i headern (kompakt, synlig i alla sorteringsvyer)
+- [x] Separat Supabase-query för hanterade (getHandledThisWeekCount)
+- [x] Soft delete – "Kasta" sätter status='deleted' istället för hård DELETE
+- [x] Felmeddelanden visas på landningssidan (duplikat-länkar m.m.)
+- [x] Villkorlig rendering: Göm om alla värden är 0
+- [x] Responsiv: På mobil visas bara siffror utan etiketter
 
 ### Egna fasta taggar
-- [ ] Supabase-tabell: favorite_tags
-  - [ ] Migration 007: user_id, tag_name, created_at
-  - [ ] RLS: Användare ser bara sina egna
-- [ ] TagEditor-uppdatering
-  - [ ] Stjärn-ikon i autocomplete-dropdown (amber-400)
-  - [ ] Klick på stjärna = toggle favorite
-  - [ ] Favoriter visas först med separator
-  - [ ] Tomt input + fokus = visa bara favoriter
-- [ ] Inline-funktionalitet (ingen separat vy)
-- [ ] API-integration: addFavoriteTag, removeFavoriteTag, getFavoriteTags
+- [x] Supabase-tabell: favorite_tags (migration 007)
+- [x] TagEditor-uppdatering
+  - [x] Stjärn-ikon i autocomplete-dropdown (amber-400)
+  - [x] Klick på stjärna = toggle favorite
+  - [x] Favoriter visas först med separator
+  - [x] Tomt input + fokus = visa bara favoriter
+- [x] Inline-funktionalitet (ingen separat vy)
+- [x] API-integration: addFavoriteTag, removeFavoriteTag, getFavoriteTags
 
 ### Databas
-- [ ] Migration 007: Skapa favorite_tags-tabell
+- [x] Migration 007: Skapa favorite_tags-tabell
 
 ---
 
@@ -104,10 +102,10 @@
 
 | # | Feature | Insats | Beskrivning |
 |---|---------|--------|-------------|
-| 1 | ~~Statistik~~ | ~~Liten~~ | ~~Tre siffror: inlagda/vecka, klara/vecka, totalt~~ 🚧 Iteration 6 |
+| 1 | ~~Statistik~~ | ~~Liten~~ | ~~Tre siffror: nya/vecka, hanterade/vecka, i kön~~ ✅ Iteration 6 |
 | 2 | ~~Jina.ai-fallback~~ | ~~Liten~~ | ~~Spara länk utan AI-analys till Inkorg~~ ✅ Iteration 5 |
 | 3 | Email intake | Medel | Mail till inbox@rasper.se → Claude-analys → Inkorg |
-| 4 | ~~Egna fasta taggar~~ | ~~Liten~~ | ~~Återanvändbara favorittaggar~~ 🚧 Iteration 6 |
+| 4 | ~~Egna fasta taggar~~ | ~~Liten~~ | ~~Återanvändbara favorittaggar~~ ✅ Iteration 6 |
 | 5 | ~~Tagg-autocomplete~~ | ~~Liten~~ | ~~Föreslå befintliga taggar medan du skriver~~ ✅ Iteration 5 |
 | 6 | Länkhistorik | Liten | Kom ihåg kastade länkar |
 | 7 | UX-polish | Liten | Bättre spacing, hover-effekter, färger |
