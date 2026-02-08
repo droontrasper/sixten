@@ -26,6 +26,7 @@ export interface Link {
   status: LinkStatus
   note: string | null
   image_data: string | null
+  manual_content: string | null
   created_at: string
   updated_at: string
   tags?: Tag[]
@@ -40,6 +41,7 @@ export interface LinkInsert {
   status?: LinkStatus
   user_id?: string
   image_data?: string
+  manual_content?: string
 }
 
 export interface ClaudeAnalysis {

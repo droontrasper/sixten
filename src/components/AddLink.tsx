@@ -43,7 +43,7 @@ interface AddLinkProps {
   isLoading: boolean
 }
 
-type Step = 'buttons' | 'url-input' | 'linkedin-prompt' | 'linkedin-text-input' | 'image-fallback'
+type Step = 'buttons' | 'url-input' | 'linkedin-prompt' | 'linkedin-text-input' | 'image-fallback' | 'jina-fallback'
 
 export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
   const [url, setUrl] = useState('')
@@ -140,9 +140,14 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
       setStep('linkedin-prompt')
       setUrl('')
     } else {
-      await onAdd({ url: normalizedUrl })
-      setUrl('')
-      setStep('buttons')
+      try {
+        await onAdd({ url: normalizedUrl })
+        setUrl('')
+        setStep('buttons')
+      } catch {
+        // Fel hanteras av App (felmeddelande eller fallback-dialog)
+        setUrl('')
+      }
     }
   }
 
@@ -201,6 +206,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
   // Gör showImageFallback tillgänglig via window för parent-komponent
   // Detta är ett enkelt sätt att kommunicera utan att behöva refs
   ;(window as unknown as { showImageFallback?: typeof showImageFallback }).showImageFallback = showImageFallback
+
+  // Exponera funktion för att trigga Jina-fallback från parent
+  const showJinaFallback = (failedUrl: string) => {
+    setPendingUrl(failedUrl)
+    setStep('jina-fallback')
+  }
+  ;(window as unknown as { showJinaFallback?: typeof showJinaFallback }).showJinaFallback = showJinaFallback
 
   // Handler för LinkedIn-bilduppladdning
   const handleLinkedInImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -348,6 +360,73 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
             ) : (
               'Spara'
             )}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Jina.ai fallback view - länken kunde inte läsas
+  if (step === 'jina-fallback') {
+    const handleJinaSaveAnyway = async () => {
+      if (!pendingUrl || isLoading) return
+      await onAdd({ url: pendingUrl, skipAnalysis: true })
+      setPendingUrl('')
+      setStep('buttons')
+    }
+
+    const handleJinaManualText = () => {
+      setStep('linkedin-text-input')
+    }
+
+    return (
+      <div className="mb-8 p-4 bg-amber-50 border-2 border-amber-200 rounded-lg">
+        <h3 className="text-lg font-medium text-amber-800 mb-2">
+          Kunde inte läsa länken
+        </h3>
+        <p className="text-sm text-amber-700 mb-4">
+          Innehållet kunde inte hämtas automatiskt. Välj ett alternativ:
+        </p>
+
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={handleJinaSaveAnyway}
+            disabled={isLoading}
+            className="w-full px-6 py-3 bg-amber-500 text-white rounded-lg font-medium
+                       hover:bg-amber-600 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <LoadingSpinner />
+                Sparar...
+              </>
+            ) : (
+              'Spara ändå utan AI-analys'
+            )}
+          </button>
+
+          <button
+            onClick={handleJinaManualText}
+            disabled={isLoading}
+            className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg font-medium
+                       hover:bg-blue-600 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
+          >
+            <span className="text-lg">📝</span>
+            Klistra in text manuellt
+          </button>
+
+          <button
+            onClick={() => { setPendingUrl(''); setStep('buttons') }}
+            disabled={isLoading}
+            className="w-full px-6 py-2.5 text-stone-500 rounded-lg
+                       hover:bg-stone-100 transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Avbryt
           </button>
         </div>
       </div>

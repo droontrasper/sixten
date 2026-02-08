@@ -118,18 +118,17 @@ function App() {
         const existingLink = links.find(l => normalizeUrl(l.url) === normalizedUrl)
 
         if (existingLink) {
-          setError(`Denna länk finns redan i ${getStatusLabel(existingLink.status)}`)
-          setIsLoading(false)
-          return
+          throw new Error(`Denna länk finns redan i ${getStatusLabel(existingLink.status)}`)
         }
 
         if (skipAnalysis) {
-          // LinkedIn-post utan manuell text - spara med minimal metadata
+          // Spara utan AI-analys (LinkedIn eller Jina-fallback)
           const urlTitle = extractLinkedInTitle(url)
+          const isLinkedIn = url.includes('linkedin.com')
           newLink = await createLink({
             url,
-            title: urlTitle || 'LinkedIn-inlägg',
-            summary: 'LinkedIn-inlägg (ingen sammanfattning tillgänglig)',
+            title: urlTitle || (isLinkedIn ? 'LinkedIn-inlägg' : extractDomainTitle(url)),
+            summary: isLinkedIn ? 'LinkedIn-inlägg (ingen sammanfattning tillgänglig)' : 'Innehåll kunde inte hämtas automatiskt.',
             content_type: 'artikel',
             estimated_minutes: 5,
             status: 'inbox',
@@ -144,6 +143,7 @@ function App() {
             content_type: analysis.typ,
             estimated_minutes: analysis.tidsuppskattning_minuter,
             status: 'inbox',
+            manual_content: manualText,
           })
 
           if (analysis.taggar && analysis.taggar.length > 0) {
@@ -152,21 +152,32 @@ function App() {
           }
         } else {
           // Vanlig länk - hämta innehåll och analysera
-          const { content } = await fetchPageContent(url)
-          const analysis = await analyzeContent(content)
+          try {
+            const { content } = await fetchPageContent(url)
+            const analysis = await analyzeContent(content)
 
-          newLink = await createLink({
-            url,
-            title: analysis.titel,
-            summary: analysis.sammanfattning,
-            content_type: analysis.typ,
-            estimated_minutes: analysis.tidsuppskattning_minuter,
-            status: 'inbox',
-          })
+            newLink = await createLink({
+              url,
+              title: analysis.titel,
+              summary: analysis.sammanfattning,
+              content_type: analysis.typ,
+              estimated_minutes: analysis.tidsuppskattning_minuter,
+              status: 'inbox',
+            })
 
-          if (analysis.taggar && analysis.taggar.length > 0) {
-            const tags = await saveTags(newLink.id, analysis.taggar, true)
-            newLink.tags = tags
+            if (analysis.taggar && analysis.taggar.length > 0) {
+              const tags = await saveTags(newLink.id, analysis.taggar, true)
+              newLink.tags = tags
+            }
+          } catch {
+            // Jina.ai kunde inte läsa länken - visa fallback-dialog
+            setIsLoading(false)
+            const showFallback = (window as unknown as { showJinaFallback?: (url: string) => void }).showJinaFallback
+            if (showFallback) {
+              showFallback(url)
+              throw new Error('__fallback__')
+            }
+            throw new Error('Kunde inte hämta innehåll från länken.')
           }
         }
       } else {
@@ -179,9 +190,20 @@ function App() {
         setActiveTab('inbox')
       }
     } catch (err) {
+      // Ignorera fallback-signaler (hanteras av AddLink-dialogen)
+      if (err instanceof Error && err.message === '__fallback__') return
       setError(err instanceof Error ? err.message : 'Kunde inte lägga till länk')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  function extractDomainTitle(url: string): string {
+    try {
+      const hostname = new URL(url).hostname.replace(/^www\./, '')
+      return `Länk från ${hostname}`
+    } catch {
+      return url
     }
   }
 
@@ -241,6 +263,10 @@ function App() {
     await handleUpdateStatus(dialogLink.id, 'later')
     setDialogLink(null)
   }
+
+  const allTags = Array.from(
+    new Set(links.flatMap(l => (l.tags || []).map(t => t.tag_name)))
+  ).sort()
 
   const inboxLinks = links.filter(l => l.status === 'inbox')
   const activeLinks = links.filter(l => l.status === 'active')
@@ -398,6 +424,7 @@ function App() {
               onDelete={handleDelete}
               onAddTag={handleAddTag}
               onRemoveTag={handleRemoveTag}
+              allTags={allTags}
             />
           )}
           {activeTab === 'active' && (

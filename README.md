@@ -8,6 +8,7 @@
 - **Klistra in länk** - URL:er analyseras automatiskt med AI (Claude)
 - **Ladda upp bild** - Skärmdumpar analyseras och sparas med AI-genererad titel
 - **LinkedIn-stöd** - Manuell text-input eller bilduppladdning för inloggningsskyddade inlägg
+- **Jina.ai-fallback** - Spara länk utan AI-analys eller klistra in text manuellt när hämtning misslyckas
 - **Smart URL** - Skriv bara `gp.se` så läggs `https://` till automatiskt
 
 ### Fyra vyer
@@ -26,6 +27,7 @@
 - Dubblettskydd
 - PWA-stöd (installera på mobil)
 - Taggfiltrering i Sparat-vyn
+- Tagg-autocomplete (föreslår befintliga taggar medan du skriver)
 
 ## Tech Stack
 

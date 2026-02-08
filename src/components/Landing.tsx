@@ -51,7 +51,19 @@ export function Landing({ latestLink, onAdd, onGoToSorting, onGoToActive, isLoad
               Senast tillagd
             </p>
             <h3 className="text-lg font-medium text-stone-800 mb-2">
-              {latestLink.title}
+              {latestLink.url.startsWith('image://') ? (
+                latestLink.title
+              ) : (
+                <a
+                  href={latestLink.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-600 transition-colors inline-flex items-center gap-1.5"
+                >
+                  {latestLink.title}
+                  <span className="text-stone-400 text-sm">🔗</span>
+                </a>
+              )}
             </h3>
             <p className="text-sm text-stone-600 mb-3 line-clamp-2">
               {latestLink.summary}

@@ -14,9 +14,10 @@ interface InboxProps {
   onDelete: (id: string) => void
   onAddTag: (linkId: string, tagName: string) => void
   onRemoveTag: (linkId: string, tagId: string) => void
+  allTags?: string[]
 }
 
-export function Inbox({ links, onMoveToActive, onMoveToLater, onDelete, onAddTag, onRemoveTag }: InboxProps) {
+export function Inbox({ links, onMoveToActive, onMoveToLater, onDelete, onAddTag, onRemoveTag, allTags }: InboxProps) {
   const [filterTag, setFilterTag] = useState<string | null>(null)
 
   const filteredLinks = useMemo(() => {
@@ -52,6 +53,7 @@ export function Inbox({ links, onMoveToActive, onMoveToLater, onDelete, onAddTag
             tagsEditable={true}
             onAddTag={(tagName) => onAddTag(link.id, tagName)}
             onRemoveTag={(tagId) => onRemoveTag(link.id, tagId)}
+            allTags={allTags}
             actions={
               <>
                 <button

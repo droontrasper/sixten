@@ -14,6 +14,7 @@ interface LinkCardProps {
   tagsEditable?: boolean
   onAddTag?: (tagName: string) => void
   onRemoveTag?: (tagId: string) => void
+  allTags?: string[]
 }
 
 const typeLabels: Record<string, string> = {
@@ -28,7 +29,7 @@ const typeColors: Record<string, string> = {
   podd: 'bg-amber-100 text-amber-700',
 }
 
-export function LinkCard({ link, actions, tagsEditable = false, onAddTag, onRemoveTag }: LinkCardProps) {
+export function LinkCard({ link, actions, tagsEditable = false, onAddTag, onRemoveTag, allTags }: LinkCardProps) {
   const [showImageModal, setShowImageModal] = useState(false)
   const isImageLink = link.url.startsWith('image://')
 
@@ -86,12 +87,19 @@ export function LinkCard({ link, actions, tagsEditable = false, onAddTag, onRemo
         {link.summary}
       </p>
 
+      {link.manual_content && (
+        <p className="text-stone-700 text-sm mt-3 p-3 bg-blue-50 rounded-lg leading-relaxed border-l-2 border-blue-300">
+          {link.manual_content}
+        </p>
+      )}
+
       {(link.tags && link.tags.length > 0) || tagsEditable ? (
         <TagEditor
           tags={link.tags || []}
           editable={tagsEditable}
           onAdd={onAddTag}
           onRemove={onRemoveTag}
+          allTags={allTags}
         />
       ) : null}
 

@@ -50,6 +50,22 @@ export async function fetchPageContent(url: string): Promise<JinaResponse> {
     throw new Error('Sidan verkar vara tom eller kunde inte läsas.')
   }
 
+  // Jina returnerar ibland felmeddelanden som 200-svar
+  const lowerContent = content.toLowerCase()
+  const errorIndicators = [
+    'could not resolve',
+    'failed to fetch',
+    'unable to retrieve',
+    'connection refused',
+    'dns resolution failed',
+    'page not found',
+    'access denied',
+    'err_name_not_resolved',
+  ]
+  if (content.trim().length < 200 && errorIndicators.some(indicator => lowerContent.includes(indicator))) {
+    throw new Error('Sidan kunde inte läsas. Kontrollera att länken är korrekt.')
+  }
+
   return {
     content,
     url,

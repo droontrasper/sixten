@@ -52,44 +52,50 @@
 
 **Utanför scope:** iOS Share Extension, Browser Extension, Email, Bulk-upload
 
-## 📋 Framtida iterationer
+## ✅ Iteration 5 – Jina-fallback + Tagg-autocomplete (Klart)
 
-### Mobilanvändning
-- [ ] iOS Share Extension – Spara från vilken app som helst på iPhone (LinkedIn, Twitter, Safari, etc.)
-- [ ] iOS Shortcut – 2-klicks-lösning via iOS Shortcuts (enklare alternativ)
+### Jina.ai-fallback (inkl. manual content)
+- [x] Fallback-dialog när Jina.ai inte kan läsa en länk (DNS-fel, paywall, etc.)
+- [x] Tre val: "Spara ändå utan AI-analys" / "Klistra in text manuellt" / "Avbryt"
+- [x] Manual content-stöd – ny `manual_content`-kolumn i databasen
+- [x] Visning av manuell text i LinkCard (blå bakgrund)
+- [x] Bättre feldetektering (DNS-fel, timeout, etc.)
 
-### Email till Sixten (PAUSAD - kräver domän)
-**Varför pausad:** Kräver egen domän för email-mottagning (SendGrid/Mailgun). För komplext för nuvarande fas.
+### Tagg-autocomplete
+- [x] Dropdown med befintliga taggar vid skrivning
+- [x] Filtrera matchande taggar (max 5 förslag)
+- [x] Välj med klick eller Enter, stäng med Escape
 
-**När vi återupptar:**
-- [ ] Skaffa domän (sixten.app eller subdomain)
-- [ ] SendGrid Inbound Parse setup
-- [ ] Email-webhook implementation (grundkod finns i netlify/functions/email-webhook.ts)
-- [ ] Databas för user_emails (migration finns: 004_add_user_emails.sql)
-- [ ] Besluta om text-hantering (anteckningar/analys/separat visning)
-- [ ] Outlook-regel dokumentation
+### Databas
+- [x] Migration 006: Lägg till `manual_content`-kolumn i links-tabellen
 
-### Browser & Desktop
-- [ ] Browser Extension (Chrome/Safari) – 1-klicks-spara från desktop-webbläsare
-- [ ] Desktop shortcut/bookmarklet
+---
 
-### Taggning - Förbättringar
-- [ ] Egna fasta taggar (återanvändbara favorittaggar)
-- [ ] Tagg-autocomplete
-- [ ] Sökfunktion på taggar i Sparat
-- [ ] Tagg-statistik
-- [ ] Bulk-taggning
-- [ ] Bättre färgdifferentiering (AI vs manuella taggar)
-- [ ] Mer spacing mellan taggar och knappar
-- [ ] Hover-effekter
+## 📋 Featurelista (prioriterad)
 
-### Övriga features
-- [ ] Smart länkhantering (titel → URL-sökning)
-- [ ] Länkhistorik (kom ihåg kastade länkar)
-- [ ] Sorteringsvy med swipe-gränssnitt
-- [ ] AI-kostnadsvisning
+| # | Feature | Insats | Beskrivning |
+|---|---------|--------|-------------|
+| 1 | Statistik | Liten | Tre siffror: inlagda/vecka, klara/vecka, totalt |
+| 2 | ~~Jina.ai-fallback~~ | ~~Liten~~ | ~~Spara länk utan AI-analys till Inkorg~~ ✅ Iteration 5 |
+| 3 | Email intake | Medel | Mail till inbox@rasper.se → Claude-analys → Inkorg |
+| 4 | Egna fasta taggar | Liten | Återanvändbara favorittaggar |
+| 5 | ~~Tagg-autocomplete~~ | ~~Liten~~ | ~~Föreslå befintliga taggar medan du skriver~~ ✅ Iteration 5 |
+| 6 | Länkhistorik | Liten | Kom ihåg kastade länkar |
+| 7 | UX-polish | Liten | Bättre spacing, hover-effekter, färger |
+
+### Email intake — beslut
+- **Adress:** inbox@rasper.se (eller valfritt prefix)
+- **Teknik:** Cloudflare Email Routing (gratis) → Netlify webhook → Claude-analys → Inkorg
+- **Innehåll:** Mailtexten i sig är innehållet (nyhetsbrev, mail från kollegor, egna texter)
+- **Visning:** Som vanligt kort med titel, sammanfattning, tidsgissning, taggar
+- **Grundkod finns redan** i projektet (webhook + migration)
+- **Kostnad:** 0 kr (domän finns)
+
+### Övriga idéer (oprioriterade)
+- [ ] iOS Share Extension / iOS Shortcut
+- [ ] Browser Extension (Chrome/Safari)
 - [ ] YouTube/Podcast-import
 - [ ] Sökfunktion i Sparat (fulltextsök)
 - [ ] Autentisering via Supabase Auth
+- [ ] AI-kostnadsvisning
 - [ ] Veckans sammanfattning (AI-genererad)
-- [ ] Delning av länkar
