@@ -128,7 +128,7 @@ export async function saveTags(linkId: string, tags: string[], aiSuggested: bool
 
   const tagRows = tags.map(tag => ({
     link_id: linkId,
-    tag_name: tag,
+    tag_name: tag.toLowerCase(),
     ai_suggested: aiSuggested,
   }))
 
@@ -163,7 +163,7 @@ export async function updateTags(
   // Lägg till nya taggar
   const tagRows = tags.map(tag => ({
     link_id: linkId,
-    tag_name: tag.name,
+    tag_name: tag.name.toLowerCase(),
     ai_suggested: tag.ai_suggested,
   }))
 

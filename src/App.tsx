@@ -125,7 +125,7 @@ function App() {
       } else if (imageData) {
         // Bilduppladdning - analysera bilden med Claude Vision
         try {
-          const analysis = await analyzeImage(imageData)
+          const analysis = await analyzeImage(imageData, allTags)
           newLink = await createLink({
             url: `image://${Date.now()}`, // Unik placeholder-URL för bilder
             title: analysis.titel,
@@ -173,7 +173,7 @@ function App() {
           })
         } else if (manualText) {
           // LinkedIn-post med manuell text - analysera texten
-          const analysis = await analyzeContent(manualText)
+          const analysis = await analyzeContent(manualText, allTags)
           newLink = await createLink({
             url,
             title: analysis.titel,
@@ -192,7 +192,7 @@ function App() {
           // Vanlig länk - hämta innehåll och analysera
           try {
             const { content } = await fetchPageContent(url)
-            const analysis = await analyzeContent(content)
+            const analysis = await analyzeContent(content, allTags)
 
             newLink = await createLink({
               url,
@@ -347,7 +347,7 @@ function App() {
       if (existingTags.length >= 10) return
       if (existingTags.some(t => t.tag_name.toLowerCase() === tagName.toLowerCase())) return
 
-      const [newTag] = await saveTags(linkId, [tagName], false)
+      const [newTag] = await saveTags(linkId, [tagName.toLowerCase()], false)
       setLinks(prev => prev.map(l =>
         l.id === linkId
           ? { ...l, tags: [...(l.tags || []), newTag] }

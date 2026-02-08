@@ -23,12 +23,23 @@ Regler:
 - För video/podd: försök hitta längden i innehållet, annars uppskatta baserat på typ
 - "taggar" ska vara 2-4 relevanta taggar som beskriver innehållet
 - Varje tagg ska vara 1-2 ord, kort och beskrivande
-- Exempel på taggar: "AI", "Machine Learning", "Business", "Tutorial", "Research", "Produktivitet", "Programmering"
+- Exempel på taggar: "ai", "machine learning", "business", "tutorial", "research", "produktivitet", "programmering"
+- Alla taggar ska vara i gemener (lowercase)
 
 Innehåll att analysera:
 `
 
-export async function analyzeContent(content: string): Promise<ClaudeAnalysis> {
+function buildAnalysisPrompt(existingTags?: string[]): string {
+  if (existingTags && existingTags.length > 0) {
+    return ANALYSIS_PROMPT.replace(
+      'Innehåll att analysera:\n',
+      `Befintliga taggar som användaren redan har: [${existingTags.join(', ')}]\nFörsök återanvända dessa taggar om de passar. Skapa nya taggar bara om ingen befintlig passar.\n\nInnehåll att analysera:\n`
+    )
+  }
+  return ANALYSIS_PROMPT
+}
+
+export async function analyzeContent(content: string, existingTags?: string[]): Promise<ClaudeAnalysis> {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
 
   if (!apiKey) {
@@ -53,7 +64,7 @@ export async function analyzeContent(content: string): Promise<ClaudeAnalysis> {
         messages: [
           {
             role: 'user',
-            content: ANALYSIS_PROMPT + truncatedContent,
+            content: buildAnalysisPrompt(existingTags) + truncatedContent,
           },
         ],
       }),
@@ -110,12 +121,13 @@ export async function analyzeContent(content: string): Promise<ClaudeAnalysis> {
 
   analysis.tidsuppskattning_minuter = Math.max(1, Math.round(analysis.tidsuppskattning_minuter))
 
-  // Validera taggar - säkerställ att det är en array med 2-4 strängar
+  // Validera taggar - säkerställ att det är en array med 2-4 strängar, normalisera till gemener
   if (!Array.isArray(analysis.taggar)) {
     analysis.taggar = []
   } else {
     analysis.taggar = analysis.taggar
       .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+      .map(tag => tag.toLowerCase())
       .slice(0, 4)
   }
 
@@ -137,13 +149,21 @@ Regler:
 - Om bilden är en skärmdump av en artikel/post, sammanfatta innehållet
 - "tidsuppskattning_minuter" ska vara en uppskattning av hur lång tid det tar att läsa/förstå innehållet
 - "taggar" ska vara 2-4 relevanta taggar som beskriver innehållet
-- Varje tagg ska vara 1-2 ord, kort och beskrivande`
+- Varje tagg ska vara 1-2 ord, kort och beskrivande
+- Alla taggar ska vara i gemener (lowercase)`
+
+function buildImagePrompt(existingTags?: string[]): string {
+  if (existingTags && existingTags.length > 0) {
+    return IMAGE_ANALYSIS_PROMPT + `\n\nBefintliga taggar som användaren redan har: [${existingTags.join(', ')}]\nFörsök återanvända dessa taggar om de passar. Skapa nya taggar bara om ingen befintlig passar.`
+  }
+  return IMAGE_ANALYSIS_PROMPT
+}
 
 /**
  * Analyserar en bild med Claude Vision API
  * @param imageData Base64-encoded bild med data URL prefix (data:image/xxx;base64,...)
  */
-export async function analyzeImage(imageData: string): Promise<ClaudeAnalysis> {
+export async function analyzeImage(imageData: string, existingTags?: string[]): Promise<ClaudeAnalysis> {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
 
   if (!apiKey) {
@@ -186,7 +206,7 @@ export async function analyzeImage(imageData: string): Promise<ClaudeAnalysis> {
               },
               {
                 type: 'text',
-                text: IMAGE_ANALYSIS_PROMPT,
+                text: buildImagePrompt(existingTags),
               },
             ],
           },
@@ -250,6 +270,7 @@ export async function analyzeImage(imageData: string): Promise<ClaudeAnalysis> {
   } else {
     analysis.taggar = analysis.taggar
       .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+      .map(tag => tag.toLowerCase())
       .slice(0, 4)
   }
 

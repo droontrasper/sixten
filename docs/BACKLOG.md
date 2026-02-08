@@ -96,6 +96,23 @@
 ### Databas
 - [x] Migration 007: Skapa favorite_tags-tabell
 
+## ✅ Iteration 7 – Tagg-normalisering + AI återanvänder taggar (Klart)
+
+### Case-normalisering
+- [x] Alla taggar sparas som gemener (lowercase) i databasen
+- [x] Visas med CSS `capitalize` i UI ("ai" → "Ai")
+- [x] Normalisering i saveTags(), updateTags(), handleAddTag(), TagEditor, AddLink fallback
+- [x] Databasmigration 008: Normalisera befintliga taggar + ta bort dubbletter
+
+### AI använder befintliga taggar
+- [x] analyzeContent() och analyzeImage() tar emot existingTags-parameter
+- [x] AI-prompten inkluderar användarens befintliga taggar
+- [x] AI instrueras att återanvända befintliga taggar när de passar
+- [x] Returnerade AI-taggar normaliseras till gemener
+
+### Databas
+- [x] Migration 008: Normalisera link_tags och favorite_tags till gemener
+
 ---
 
 ## 📋 Featurelista (prioriterad)

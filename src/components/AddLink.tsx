@@ -177,8 +177,9 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
 
   const handleFallbackAddTag = () => {
     const tag = fallbackTagInput.trim()
-    if (tag && fallbackTags.length < 4 && !fallbackTags.includes(tag)) {
-      setFallbackTags([...fallbackTags, tag])
+    const normalizedTag = tag.toLowerCase()
+    if (normalizedTag && fallbackTags.length < 4 && !fallbackTags.some(t => t.toLowerCase() === normalizedTag)) {
+      setFallbackTags([...fallbackTags, normalizedTag])
       setFallbackTagInput('')
     }
   }
