@@ -403,6 +403,8 @@ function App() {
           setActiveTab('active')
         }}
         isLoading={isLoading}
+        error={error}
+        onClearError={() => setError(null)}
       />
     )
   }

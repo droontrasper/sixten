@@ -23,9 +23,11 @@ interface LandingProps {
   onGoToSorting: () => void
   onGoToActive: () => void
   isLoading: boolean
+  error?: string | null
+  onClearError?: () => void
 }
 
-export function Landing({ latestLink, stats, onAdd, onGoToSorting, onGoToActive, isLoading }: LandingProps) {
+export function Landing({ latestLink, stats, onAdd, onGoToSorting, onGoToActive, isLoading, error, onClearError }: LandingProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-stone-100 flex items-center justify-center px-4">
       <div className="w-full max-w-xl">
@@ -50,6 +52,21 @@ export function Landing({ latestLink, stats, onAdd, onGoToSorting, onGoToActive,
 
         {/* AddLink - för att lägga till ny länk */}
         <AddLink onAdd={onAdd} isLoading={isLoading} />
+
+        {/* Felmeddelande */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
+            {onClearError && (
+              <button
+                onClick={onClearError}
+                className="ml-2 text-red-500 hover:text-red-700"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Senast tillagda länk */}
         {latestLink && (
