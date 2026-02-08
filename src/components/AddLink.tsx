@@ -55,7 +55,10 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
   const [fallbackTitle, setFallbackTitle] = useState('')
   const [fallbackTagInput, setFallbackTagInput] = useState('')
   const [fallbackTags, setFallbackTags] = useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const busy = isLoading || isSubmitting
 
   const isLinkedInPost = (checkUrl: string): boolean => {
     return checkUrl.includes('linkedin.com/posts/')
@@ -79,7 +82,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || busy) return
 
     // Reset file input
     e.target.value = ''
@@ -101,17 +104,17 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
     }
 
     // Konvertera till base64
+    setIsSubmitting(true)
     try {
       const base64 = await fileToBase64(file)
-      console.log('Image converted to base64, length:', base64.length)
-
-      // Skicka till parent för analys
       await onAdd({ imageData: base64 })
       setImageError(null)
     } catch {
       const error = 'Kunde inte läsa bilden. Försök igen.'
       setImageError(error)
       onImageError?.(error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -131,7 +134,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!url.trim() || isLoading) return
+    if (!url.trim() || busy) return
 
     const normalizedUrl = normalizeInputUrl(url.trim())
 
@@ -140,21 +143,28 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
       setStep('linkedin-prompt')
       setUrl('')
     } else {
+      setIsSubmitting(true)
       try {
         await onAdd({ url: normalizedUrl })
         setUrl('')
         setStep('buttons')
       } catch {
-        // Fel hanteras av App (felmeddelande eller fallback-dialog)
         setUrl('')
+      } finally {
+        setIsSubmitting(false)
       }
     }
   }
 
   const handleAnalyzeWithText = async () => {
-    if (!pendingUrl || isLoading) return
-    await onAdd({ url: pendingUrl, manualText: manualText.trim() })
-    resetLinkedInState()
+    if (!pendingUrl || busy) return
+    setIsSubmitting(true)
+    try {
+      await onAdd({ url: pendingUrl, manualText: manualText.trim() })
+      resetLinkedInState()
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleCancel = () => {
@@ -189,13 +199,18 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
   }
 
   const handleFallbackSubmit = async () => {
-    if (!pendingImageData || !fallbackTitle.trim() || isLoading) return
-    await onAdd({
-      imageData: pendingImageData,
-      manualTitle: fallbackTitle.trim(),
-      manualTags: fallbackTags.length > 0 ? fallbackTags : undefined,
-    })
-    resetFallbackState()
+    if (!pendingImageData || !fallbackTitle.trim() || busy) return
+    setIsSubmitting(true)
+    try {
+      await onAdd({
+        imageData: pendingImageData,
+        manualTitle: fallbackTitle.trim(),
+        manualTags: fallbackTags.length > 0 ? fallbackTags : undefined,
+      })
+      resetFallbackState()
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Exponera funktion för att trigga fallback-dialog från parent
@@ -236,6 +251,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
       return
     }
 
+    setIsSubmitting(true)
     try {
       const base64 = await fileToBase64(file)
       await onAdd({ url: pendingUrl, imageData: base64 })
@@ -245,6 +261,8 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
       const error = 'Kunde inte läsa bilden. Försök igen.'
       setImageError(error)
       onImageError?.(error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -276,7 +294,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
           value={fallbackTitle}
           onChange={(e) => setFallbackTitle(e.target.value)}
           placeholder="Ange en titel..."
-          disabled={isLoading}
+          disabled={busy}
           autoFocus
           className="w-full px-4 py-3 rounded-lg border border-amber-300 bg-white mb-4
                      focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
@@ -298,7 +316,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
                 }
               }}
               placeholder="Lägg till tagg..."
-              disabled={isLoading || fallbackTags.length >= 4}
+              disabled={busy || fallbackTags.length >= 4}
               className="flex-1 px-3 py-2 rounded-lg border border-amber-300 bg-white text-sm
                          focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
                          disabled:opacity-50 disabled:cursor-not-allowed
@@ -307,7 +325,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
             <button
               type="button"
               onClick={handleFallbackAddTag}
-              disabled={!fallbackTagInput.trim() || fallbackTags.length >= 4 || isLoading}
+              disabled={!fallbackTagInput.trim() || fallbackTags.length >= 4 || busy}
               className="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm
                          hover:bg-amber-600 transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed"
@@ -338,7 +356,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
         <div className="flex gap-3">
           <button
             onClick={resetFallbackState}
-            disabled={isLoading}
+            disabled={busy}
             className="px-4 py-2.5 bg-stone-100 text-stone-600 rounded-lg
                        hover:bg-stone-200 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
@@ -347,13 +365,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
           </button>
           <button
             onClick={handleFallbackSubmit}
-            disabled={!fallbackTitle.trim() || isLoading}
+            disabled={!fallbackTitle.trim() || busy}
             className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-lg font-medium
                        hover:bg-amber-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed
                        flex items-center justify-center gap-2"
           >
-            {isLoading ? (
+            {busy ? (
               <>
                 <LoadingSpinner />
                 Sparar...
@@ -370,10 +388,15 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
   // Jina.ai fallback view - länken kunde inte läsas
   if (step === 'jina-fallback') {
     const handleJinaSaveAnyway = async () => {
-      if (!pendingUrl || isLoading) return
-      await onAdd({ url: pendingUrl, skipAnalysis: true })
-      setPendingUrl('')
-      setStep('buttons')
+      if (!pendingUrl || busy) return
+      setIsSubmitting(true)
+      try {
+        await onAdd({ url: pendingUrl, skipAnalysis: true })
+        setPendingUrl('')
+        setStep('buttons')
+      } finally {
+        setIsSubmitting(false)
+      }
     }
 
     const handleJinaManualText = () => {
@@ -392,13 +415,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
         <div className="flex flex-col gap-3">
           <button
             onClick={handleJinaSaveAnyway}
-            disabled={isLoading}
+            disabled={busy}
             className="w-full px-6 py-3 bg-amber-500 text-white rounded-lg font-medium
                        hover:bg-amber-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed
                        flex items-center justify-center gap-2"
           >
-            {isLoading ? (
+            {busy ? (
               <>
                 <LoadingSpinner />
                 Sparar...
@@ -410,7 +433,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
 
           <button
             onClick={handleJinaManualText}
-            disabled={isLoading}
+            disabled={busy}
             className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg font-medium
                        hover:bg-blue-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed
@@ -422,7 +445,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
 
           <button
             onClick={() => { setPendingUrl(''); setStep('buttons') }}
-            disabled={isLoading}
+            disabled={busy}
             className="w-full px-6 py-2.5 text-stone-500 rounded-lg
                        hover:bg-stone-100 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
@@ -449,7 +472,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
           value={manualText}
           onChange={(e) => setManualText(e.target.value)}
           placeholder="Klistra in inläggets text här..."
-          disabled={isLoading}
+          disabled={busy}
           autoFocus
           className="w-full p-3 border-2 border-blue-300 rounded-lg min-h-32 mb-4
                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
@@ -460,7 +483,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
         <div className="flex gap-3">
           <button
             onClick={() => setStep('linkedin-prompt')}
-            disabled={isLoading}
+            disabled={busy}
             className="px-4 py-2.5 bg-stone-100 text-stone-600 rounded-lg
                        hover:bg-stone-200 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
@@ -469,13 +492,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
           </button>
           <button
             onClick={handleAnalyzeWithText}
-            disabled={!manualText.trim() || isLoading}
+            disabled={!manualText.trim() || busy}
             className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-lg font-medium
                        hover:bg-blue-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed
                        flex items-center justify-center gap-2"
           >
-            {isLoading ? (
+            {busy ? (
               <>
                 <LoadingSpinner />
                 Analyserar...
@@ -525,13 +548,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
         <div className="flex flex-col gap-3">
           <button
             onClick={() => setStep('linkedin-text-input')}
-            disabled={isLoading}
+            disabled={busy}
             className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg font-medium
                        hover:bg-blue-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed
                        flex items-center justify-center gap-2"
           >
-            {isLoading ? (
+            {busy ? (
               <>
                 <LoadingSpinner />
                 Analyserar...
@@ -546,13 +569,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
+            disabled={busy}
             className="w-full px-6 py-3 bg-emerald-500 text-white rounded-lg font-medium
                        hover:bg-emerald-600 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed
                        flex items-center justify-center gap-2"
           >
-            {isLoading ? (
+            {busy ? (
               <>
                 <LoadingSpinner />
                 Analyserar...
@@ -567,7 +590,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
 
           <button
             onClick={handleCancel}
-            disabled={isLoading}
+            disabled={busy}
             className="w-full px-6 py-2.5 text-stone-500 rounded-lg
                        hover:bg-stone-100 transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed
@@ -590,7 +613,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
             <button
               type="button"
               onClick={handleBackToButtons}
-              disabled={isLoading}
+              disabled={busy}
               className="px-3 py-3 bg-stone-100 text-stone-600 rounded-lg
                          hover:bg-stone-200 transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed"
@@ -603,7 +626,7 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Klistra in en länk (t.ex. gp.se eller https://...)..."
-              disabled={isLoading}
+              disabled={busy}
               autoFocus
               className="flex-1 px-4 py-3 rounded-lg border border-stone-300 bg-white
                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
@@ -612,13 +635,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
             />
             <button
               type="submit"
-              disabled={!url.trim() || isLoading}
+              disabled={!url.trim() || busy}
               className="px-6 py-3 bg-blue-500 text-white rounded-lg font-medium
                          hover:bg-blue-600 transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed
                          flex items-center gap-2"
             >
-              {isLoading ? (
+              {busy ? (
                 <>
                   <LoadingSpinner />
                   Analyserar...
@@ -662,13 +685,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
       <div className="flex gap-3">
         <button
           onClick={handleUrlButtonClick}
-          disabled={isLoading}
+          disabled={busy}
           className="flex-1 px-6 py-4 bg-blue-500 text-white rounded-lg font-medium
                      hover:bg-blue-600 transition-colors
                      disabled:opacity-50 disabled:cursor-not-allowed
                      flex items-center justify-center gap-2"
         >
-          {isLoading ? (
+          {busy ? (
             <>
               <LoadingSpinner />
               Analyserar...
@@ -683,13 +706,13 @@ export function AddLink({ onAdd, onImageError, isLoading }: AddLinkProps) {
 
         <button
           onClick={handleImageButtonClick}
-          disabled={isLoading}
+          disabled={busy}
           className="flex-1 px-6 py-4 bg-emerald-500 text-white rounded-lg font-medium
                      hover:bg-emerald-600 transition-colors
                      disabled:opacity-50 disabled:cursor-not-allowed
                      flex items-center justify-center gap-2"
         >
-          {isLoading ? (
+          {busy ? (
             <>
               <LoadingSpinner />
               Analyserar...

@@ -1,10 +1,22 @@
 /**
  * Netlify Function för att hämta webbinnehåll via Jina Reader.
  * Konverterar webbsidor till ren text för AI-analys.
+ * Inkluderar feldetektering för DNS-fel och andra problem.
  */
 import type { Handler } from '@netlify/functions'
 
 const JINA_READER_URL = 'https://r.jina.ai/'
+
+const ERROR_INDICATORS = [
+  'could not resolve',
+  'failed to fetch',
+  'unable to retrieve',
+  'connection refused',
+  'dns resolution failed',
+  'page not found',
+  'access denied',
+  'err_name_not_resolved',
+]
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -85,6 +97,15 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 422,
       body: JSON.stringify({ error: 'Sidan verkar vara tom eller kunde inte läsas.' }),
+    }
+  }
+
+  // Jina returnerar ibland felmeddelanden som 200-svar
+  const lowerContent = content.toLowerCase()
+  if (content.trim().length < 200 && ERROR_INDICATORS.some(indicator => lowerContent.includes(indicator))) {
+    return {
+      statusCode: 422,
+      body: JSON.stringify({ error: 'Sidan kunde inte läsas. Kontrollera att länken är korrekt.' }),
     }
   }
 

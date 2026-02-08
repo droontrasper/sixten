@@ -113,6 +113,26 @@
 ### Databas
 - [x] Migration 008: Normalisera link_tags och favorite_tags till gemener
 
+## ✅ Iteration 8 – Säkerhet + UX-polish (Klart)
+
+### Säkerhet: API-nycklar till servern
+- [x] claude.ts omskriven — anropar `/api/analyze` istället för Anthropic direkt
+- [x] jina.ts omskriven — anropar `/api/fetch-content` istället för Jina direkt
+- [x] `VITE_ANTHROPIC_API_KEY` och `VITE_JINA_API_KEY` borttagna från frontend
+- [x] netlify/functions/analyze.ts uppdaterad med existingTags, bättre prompts, tag-normalisering
+- [x] netlify/functions/fetch-content.ts uppdaterad med feldetektering (DNS-fel, error indicators)
+
+### AI-prompts förbättrade
+- [x] Titel max 60 tecken, inte clickbait
+- [x] Taggar ska vara specifika, undvik generiska ("artikel", "text")
+- [x] Alla taggar i gemener (lowercase)
+- [x] Återanvändning av befintliga taggar
+
+### UX-polish
+- [x] Knapp-hierarki i Inbox: Aktiv lista (blå), Senare (grå), Kasta (diskret, röd hover)
+- [x] Debounce i AddLink — `isSubmitting` state förhindrar dubbel-submit
+- [x] ErrorBoundary — fångar rendering-fel, visar vänligt meddelande med "Ladda om"-knapp
+
 ---
 
 ## 📋 Featurelista (prioriterad)

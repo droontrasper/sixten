@@ -22,13 +22,20 @@
 - Tidsuppskattning baserat på innehåll
 - AI-föreslagna taggar (2-4 st per länk)
 - Bildanalys med textigenkänning
+- AI återanvänder befintliga taggar för konsekvens
+
+### Tagghantering
+- Tagg-autocomplete med befintliga taggar
+- Favorittaggar (stjärnmarkerade) visas först
+- Taggar normaliseras automatiskt till gemener
+- Taggfiltrering i alla vyer
 
 ### Övrigt
-- Landing-sida med Sixten-logga och senast tillagd länk
+- Landing-sida med Sixten-logga och veckostatistik
 - Dubblettskydd
 - PWA-stöd (installera på mobil)
-- Taggfiltrering i Sparat-vyn
-- Tagg-autocomplete (föreslår befintliga taggar medan du skriver)
+- Error Boundary förhindrar blank sida vid krasch
+- Debounce-skydd mot dubbel-submit
 
 ## Tech Stack
 
@@ -54,12 +61,16 @@ npm run build
 
 ### Miljövariabler
 
-Skapa `.env.local` med:
-
+**Frontend** (`.env.local`):
 ```env
 VITE_SUPABASE_URL=din-supabase-url
 VITE_SUPABASE_ANON_KEY=din-anon-key
-VITE_ANTHROPIC_API_KEY=din-claude-api-nyckel
+```
+
+**Server** (Netlify Dashboard → Environment Variables):
+```env
+ANTHROPIC_API_KEY=din-claude-api-nyckel
+JINA_API_KEY=din-jina-api-nyckel
 ```
 
 ## Projektstruktur
@@ -75,18 +86,22 @@ src/
 │   ├── Saved.tsx         # Sparat-vy
 │   ├── LinkCard.tsx      # Återanvändbar länkkomponent
 │   ├── ImageModal.tsx    # Fullskärmsvisning av bilder
-│   ├── TagEditor.tsx     # Tagg-hantering
+│   ├── TagEditor.tsx     # Tagg-hantering med autocomplete
+│   ├── TagFilter.tsx     # Taggfilter
+│   ├── StatsBar.tsx      # Veckostatistik
+│   ├── ErrorBoundary.tsx # Felhantering vid krasch
 │   └── SaveDialog.tsx    # "Vill du spara?"-dialog
-├── services/       # API-integrationer
+├── services/       # API-integrationer (proxar via Netlify Functions)
 │   ├── supabase.ts       # Databasoperationer
-│   ├── claude.ts         # AI-analys
-│   └── jina.ts           # Innehållshämtning
+│   ├── claude.ts         # AI-analys via /api/analyze
+│   └── jina.ts           # Innehållshämtning via /api/fetch-content
 ├── types/          # TypeScript-typer
 └── App.tsx         # Huvudkomponent
 
 netlify/
-└── functions/      # Serverless-funktioner
-    └── analyze.ts        # Claude API-proxy
+└── functions/      # Serverless-funktioner (API-nycklar hålls här)
+    ├── analyze.ts        # Claude API-proxy
+    └── fetch-content.ts  # Jina Reader-proxy
 
 docs/
 └── BACKLOG.md      # Projektbacklog och roadmap

@@ -1,10 +1,7 @@
 /**
  * Netlify Function för Claude AI-analys.
  * Tar emot webbinnehåll eller bilder och returnerar titel, sammanfattning, typ och tidsuppskattning.
- *
- * Input-format:
- * - URL-analys: { type: 'url', data: 'innehåll från webbsidan' } eller { content: 'innehåll' } (bakåtkompatibelt)
- * - Bildanalys: { type: 'image', data: 'data:image/png;base64,...' }
+ * API-nyckeln hålls säkert på servern.
  */
 import type { Handler } from '@netlify/functions'
 
@@ -21,13 +18,16 @@ const TEXT_ANALYSIS_PROMPT = `Analysera följande innehåll och svara ENDAST med
 }
 
 Regler:
+- "titel" ska vara kort och beskrivande (max 60 tecken), inte clickbait
 - "typ" ska vara "artikel" för textbaserat innehåll, "video" för YouTube/Vimeo etc, "podd" för podcasts/ljudinnehåll
 - "tidsuppskattning_minuter" ska vara en rimlig uppskattning av hur lång tid det tar att konsumera innehållet
 - För artiklar: uppskatta baserat på textlängd (ca 200 ord/minut)
 - För video/podd: försök hitta längden i innehållet, annars uppskatta baserat på typ
 - "taggar" ska vara 2-4 relevanta taggar som beskriver innehållet
 - Varje tagg ska vara 1-2 ord, kort och beskrivande
-- Exempel på taggar: "AI", "Machine Learning", "Business", "Tutorial", "Research", "Produktivitet", "Programmering"
+- Alla taggar ska vara i gemener (lowercase)
+- Taggar ska vara specifika, undvik generiska taggar som "artikel", "text" eller "innehåll"
+- Exempel på taggar: "ai", "machine learning", "business", "tutorial", "research", "produktivitet", "programmering"
 
 Innehåll att analysera:
 `
@@ -48,6 +48,8 @@ Regler:
 - "tidsuppskattning_minuter" ska vara en uppskattning av hur lång tid det tar att läsa/förstå innehållet (vanligtvis 1-5 minuter för en skärmdump)
 - "taggar" ska vara 2-4 relevanta taggar som beskriver innehållet
 - Varje tagg ska vara 1-2 ord, kort och beskrivande
+- Alla taggar ska vara i gemener (lowercase)
+- Taggar ska vara specifika, undvik generiska taggar
 - Om bilden är oläslig eller inte innehåller text, svara med: {"error": "UNREADABLE_IMAGE"}`
 
 interface ClaudeAnalysis {
@@ -60,9 +62,26 @@ interface ClaudeAnalysis {
 }
 
 type RequestBody =
-  | { type: 'url'; data: string }
-  | { type: 'image'; data: string }
+  | { type: 'url'; data: string; existingTags?: string[] }
+  | { type: 'image'; data: string; existingTags?: string[] }
   | { content: string } // Bakåtkompatibelt format
+
+function buildTextPrompt(existingTags?: string[]): string {
+  if (existingTags && existingTags.length > 0) {
+    return TEXT_ANALYSIS_PROMPT.replace(
+      'Innehåll att analysera:\n',
+      `Befintliga taggar som användaren redan har: [${existingTags.join(', ')}]\nFörsök återanvända dessa taggar om de passar. Skapa nya taggar bara om ingen befintlig passar.\n\nInnehåll att analysera:\n`
+    )
+  }
+  return TEXT_ANALYSIS_PROMPT
+}
+
+function buildImagePromptWithTags(existingTags?: string[]): string {
+  if (existingTags && existingTags.length > 0) {
+    return IMAGE_ANALYSIS_PROMPT + `\n\nBefintliga taggar som användaren redan har: [${existingTags.join(', ')}]\nFörsök återanvända dessa taggar om de passar. Skapa nya taggar bara om ingen befintlig passar.`
+  }
+  return IMAGE_ANALYSIS_PROMPT
+}
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -91,16 +110,14 @@ export const handler: Handler = async (event) => {
     }
   }
 
-  // Avgör om det är bildanalys eller textanalys
   const isImageAnalysis = 'type' in requestBody && requestBody.type === 'image'
+  const existingTags = 'existingTags' in requestBody ? requestBody.existingTags : undefined
 
   let response: Response
   try {
     if (isImageAnalysis) {
-      // Bildanalys med Claude Vision
       const imageData = requestBody.data
 
-      // Validera och extrahera base64-data
       const match = imageData.match(/^data:(image\/[a-z]+);base64,(.+)$/i)
       if (!match) {
         return {
@@ -136,7 +153,7 @@ export const handler: Handler = async (event) => {
                 },
                 {
                   type: 'text',
-                  text: IMAGE_ANALYSIS_PROMPT,
+                  text: buildImagePromptWithTags(existingTags),
                 },
               ],
             },
@@ -144,7 +161,6 @@ export const handler: Handler = async (event) => {
         }),
       })
     } else {
-      // Textanalys (befintlig logik)
       let content: string
       if ('type' in requestBody && requestBody.type === 'url') {
         content = requestBody.data
@@ -179,7 +195,7 @@ export const handler: Handler = async (event) => {
           messages: [
             {
               role: 'user',
-              content: TEXT_ANALYSIS_PROMPT + truncatedContent,
+              content: buildTextPrompt(existingTags) + truncatedContent,
             },
           ],
         }),
@@ -194,76 +210,48 @@ export const handler: Handler = async (event) => {
 
   if (!response.ok) {
     if (response.status === 401) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ success: false, error: 'API_ERROR' }),
-      }
+      return { statusCode: 500, body: JSON.stringify({ success: false, error: 'API_AUTH_ERROR' }) }
     }
     if (response.status === 429) {
-      return {
-        statusCode: 429,
-        body: JSON.stringify({ success: false, error: 'API_ERROR' }),
-      }
+      return { statusCode: 429, body: JSON.stringify({ success: false, error: 'RATE_LIMIT' }) }
     }
-    return {
-      statusCode: 502,
-      body: JSON.stringify({ success: false, error: 'API_ERROR' }),
-    }
+    return { statusCode: 502, body: JSON.stringify({ success: false, error: 'API_ERROR' }) }
   }
 
   let data: { content?: { text?: string }[] }
   try {
     data = await response.json()
   } catch {
-    return {
-      statusCode: 502,
-      body: JSON.stringify({ success: false, error: 'API_ERROR' }),
-    }
+    return { statusCode: 502, body: JSON.stringify({ success: false, error: 'API_ERROR' }) }
   }
 
   const textContent = data.content?.[0]?.text
-
   if (!textContent) {
-    return {
-      statusCode: 502,
-      body: JSON.stringify({ success: false, error: 'API_ERROR' }),
-    }
+    return { statusCode: 502, body: JSON.stringify({ success: false, error: 'API_ERROR' }) }
   }
 
   const jsonMatch = textContent.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
-    return {
-      statusCode: 502,
-      body: JSON.stringify({ success: false, error: 'API_ERROR' }),
-    }
+    return { statusCode: 502, body: JSON.stringify({ success: false, error: 'API_ERROR' }) }
   }
 
   let analysis: ClaudeAnalysis
   try {
     analysis = JSON.parse(jsonMatch[0])
   } catch {
-    return {
-      statusCode: 502,
-      body: JSON.stringify({ success: false, error: 'API_ERROR' }),
-    }
+    return { statusCode: 502, body: JSON.stringify({ success: false, error: 'API_ERROR' }) }
   }
 
-  // Kontrollera om Claude rapporterade att bilden var oläslig
   if (analysis.error === 'UNREADABLE_IMAGE') {
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ success: false, error: 'UNREADABLE_IMAGE' }),
     }
   }
 
   if (!analysis.titel || !analysis.sammanfattning || !analysis.typ || !analysis.tidsuppskattning_minuter) {
-    return {
-      statusCode: 502,
-      body: JSON.stringify({ success: false, error: 'API_ERROR' }),
-    }
+    return { statusCode: 502, body: JSON.stringify({ success: false, error: 'API_ERROR' }) }
   }
 
   if (!['artikel', 'video', 'podd'].includes(analysis.typ)) {
@@ -272,34 +260,26 @@ export const handler: Handler = async (event) => {
 
   analysis.tidsuppskattning_minuter = Math.max(1, Math.round(analysis.tidsuppskattning_minuter))
 
-  // Validera taggar - säkerställ att det är en array med 2-4 strängar
+  // Normalisera taggar till gemener
   if (!Array.isArray(analysis.taggar)) {
     analysis.taggar = []
   } else {
     analysis.taggar = analysis.taggar
       .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+      .map(tag => tag.toLowerCase())
       .slice(0, 4)
   }
 
-  // Returnera med success-flagga och content_type för bilder
   return {
     statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       success: true,
-      title: analysis.titel,
-      summary: analysis.sammanfattning,
-      tags: analysis.taggar,
-      estimatedMinutes: analysis.tidsuppskattning_minuter,
-      contentType: isImageAnalysis ? 'image' : analysis.typ,
-      // Behåll också svenska fält för bakåtkompatibilitet
       titel: analysis.titel,
       sammanfattning: analysis.sammanfattning,
-      taggar: analysis.taggar,
       typ: analysis.typ,
       tidsuppskattning_minuter: analysis.tidsuppskattning_minuter,
+      taggar: analysis.taggar,
     }),
   }
 }
