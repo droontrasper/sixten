@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react'
 import type { Link, LinkStatus } from './types'
-import { getLinks, createLink, updateLinkStatus, deleteLink, saveTags, updateTags, getFavoriteTags, addFavoriteTag, removeFavoriteTag } from './services/supabase'
+import { getLinks, createLink, updateLinkStatus, deleteLink, saveTags, updateTags, getFavoriteTags, addFavoriteTag, removeFavoriteTag, getHandledThisWeekCount } from './services/supabase'
 import { fetchPageContent } from './services/jina'
 import { analyzeContent, analyzeImage } from './services/claude'
 import { AddLink, type AddLinkResult } from './components/AddLink'
@@ -28,11 +28,22 @@ function App() {
   const [dialogLink, setDialogLink] = useState<Link | null>(null)
   const [landingMode, setLandingMode] = useState(true)
   const [favoriteTags, setFavoriteTags] = useState<string[]>([])
+  const [handledThisWeek, setHandledThisWeek] = useState(0)
 
   useEffect(() => {
     loadLinks()
     loadFavoriteTags()
+    loadHandledCount()
   }, [])
+
+  async function loadHandledCount() {
+    try {
+      const count = await getHandledThisWeekCount()
+      setHandledThisWeek(count)
+    } catch {
+      // Ignorera fel
+    }
+  }
 
   async function loadFavoriteTags() {
     try {
@@ -60,9 +71,8 @@ function App() {
   async function loadLinks() {
     try {
       const data = await getLinks()
-      const filtered = data.filter(l => l.status !== 'deleted')
-      console.log('[LOAD DEBUG] Laddade', filtered.length, 'länkar, varav', filtered.filter(l => l.status === 'done').length, 'done')
-      setLinks(filtered)
+      setLinks(data.filter(l => l.status !== 'deleted'))
+      loadHandledCount()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kunde inte ladda länkar')
     }
@@ -259,6 +269,7 @@ function App() {
     try {
       await deleteLink(id)
       setLinks(prev => prev.filter(l => l.id !== id))
+      loadHandledCount()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kunde inte ta bort länk')
     }
@@ -271,12 +282,10 @@ function App() {
   async function handleDialogSave(note: string) {
     if (!dialogLink) return
     try {
-      console.log('[SAVE DEBUG] Sparar som done:', dialogLink.id.slice(0,8), dialogLink.title.slice(0,30))
       const updated = await updateLinkStatus(dialogLink.id, 'done', note || undefined)
-      console.log('[SAVE DEBUG] Returnerat från DB:', { id: updated.id.slice(0,8), status: updated.status, updated_at: updated.updated_at })
       setLinks(prev => prev.map(l => l.id === dialogLink.id ? updated : l))
+      loadHandledCount()
     } catch (err) {
-      console.error('[SAVE DEBUG] FEL:', err)
       setError(err instanceof Error ? err.message : 'Kunde inte spara länk')
     }
     setDialogLink(null)
@@ -379,15 +388,10 @@ function App() {
   // Beräkna statistik för landing page
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
-  const doneLinks = links.filter(l => l.status === 'done')
-  const doneThisWeek = doneLinks.filter(l => new Date(l.updated_at) >= weekAgo)
-  console.log('[STATS DEBUG] weekAgo:', weekAgo.toISOString())
-  console.log('[STATS DEBUG] alla länkar:', links.length, 'done:', doneLinks.length, 'done denna vecka:', doneThisWeek.length)
-  console.log('[STATS DEBUG] done-länkar:', doneLinks.map(l => ({ id: l.id.slice(0,8), status: l.status, updated_at: l.updated_at, title: l.title.slice(0,30) })))
   const stats = {
     addedThisWeek: links.filter(l => new Date(l.created_at) >= weekAgo).length,
-    completedThisWeek: doneThisWeek.length,
-    totalLinks: links.length,
+    handledThisWeek: handledThisWeek,
+    queueCount: links.filter(l => ['inbox', 'active', 'later'].includes(l.status)).length,
   }
 
   // Visa landing page om landingMode är true

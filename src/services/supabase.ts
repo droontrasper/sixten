@@ -216,6 +216,24 @@ export async function removeFavoriteTag(tagName: string): Promise<void> {
   }
 }
 
+export async function getHandledThisWeekCount(): Promise<number> {
+  const weekAgo = new Date()
+  weekAgo.setDate(weekAgo.getDate() - 7)
+
+  const { count, error } = await supabase
+    .from('links')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', DEFAULT_USER_ID)
+    .in('status', ['done', 'deleted'])
+    .gte('updated_at', weekAgo.toISOString())
+
+  if (error) {
+    throw new Error(`Kunde inte räkna hanterade länkar: ${error.message}`)
+  }
+
+  return count ?? 0
+}
+
 export async function getTagsForLink(linkId: string): Promise<Tag[]> {
   const { data, error } = await supabase
     .from('link_tags')

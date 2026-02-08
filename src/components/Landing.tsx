@@ -12,8 +12,8 @@ import { AddLink, type AddLinkResult } from './AddLink'
 
 interface LandingStats {
   addedThisWeek: number
-  completedThisWeek: number
-  totalLinks: number
+  handledThisWeek: number
+  queueCount: number
 }
 
 interface LandingProps {
@@ -102,19 +102,27 @@ export function Landing({ latestLink, stats, onAdd, onGoToSorting, onGoToActive,
         )}
 
         {/* Statistik */}
-        {(stats.addedThisWeek > 0 || stats.completedThisWeek > 0 || stats.totalLinks > 0) && (
-          <div className="flex justify-center gap-8 py-4 mb-6 text-stone-400 text-sm">
+        {(stats.addedThisWeek > 0 || stats.handledThisWeek > 0 || stats.queueCount > 0) && (
+          <div className="flex justify-center items-start gap-6 sm:gap-10 py-4 mb-6">
             <div className="text-center">
-              <span className="block text-lg font-semibold text-stone-600">+{stats.addedThisWeek}</span>
-              <span>denna vecka</span>
+              <span className="block text-xl font-bold text-stone-600">+{stats.addedThisWeek}</span>
+              <span className="text-xs text-stone-400 leading-tight">
+                nya denna<br />vecka
+              </span>
             </div>
+            <div className="w-px h-10 bg-stone-200" />
             <div className="text-center">
-              <span className="block text-lg font-semibold text-emerald-600">{stats.completedThisWeek}</span>
-              <span>klara</span>
+              <span className="block text-xl font-bold text-emerald-600">{stats.handledThisWeek}</span>
+              <span className="text-xs text-stone-400 leading-tight">
+                hanterade<br />denna vecka
+              </span>
             </div>
+            <div className="w-px h-10 bg-stone-200" />
             <div className="text-center">
-              <span className="block text-lg font-semibold text-stone-600">{stats.totalLinks}</span>
-              <span>totalt</span>
+              <span className="block text-xl font-bold text-stone-500">{stats.queueCount}</span>
+              <span className="text-xs text-stone-400 leading-tight">
+                i kön
+              </span>
             </div>
           </div>
         )}
