@@ -60,7 +60,9 @@ function App() {
   async function loadLinks() {
     try {
       const data = await getLinks()
-      setLinks(data.filter(l => l.status !== 'deleted'))
+      const filtered = data.filter(l => l.status !== 'deleted')
+      console.log('[LOAD DEBUG] Laddade', filtered.length, 'länkar, varav', filtered.filter(l => l.status === 'done').length, 'done')
+      setLinks(filtered)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kunde inte ladda länkar')
     }
@@ -269,9 +271,12 @@ function App() {
   async function handleDialogSave(note: string) {
     if (!dialogLink) return
     try {
+      console.log('[SAVE DEBUG] Sparar som done:', dialogLink.id.slice(0,8), dialogLink.title.slice(0,30))
       const updated = await updateLinkStatus(dialogLink.id, 'done', note || undefined)
+      console.log('[SAVE DEBUG] Returnerat från DB:', { id: updated.id.slice(0,8), status: updated.status, updated_at: updated.updated_at })
       setLinks(prev => prev.map(l => l.id === dialogLink.id ? updated : l))
     } catch (err) {
+      console.error('[SAVE DEBUG] FEL:', err)
       setError(err instanceof Error ? err.message : 'Kunde inte spara länk')
     }
     setDialogLink(null)
@@ -374,9 +379,14 @@ function App() {
   // Beräkna statistik för landing page
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
+  const doneLinks = links.filter(l => l.status === 'done')
+  const doneThisWeek = doneLinks.filter(l => new Date(l.updated_at) >= weekAgo)
+  console.log('[STATS DEBUG] weekAgo:', weekAgo.toISOString())
+  console.log('[STATS DEBUG] alla länkar:', links.length, 'done:', doneLinks.length, 'done denna vecka:', doneThisWeek.length)
+  console.log('[STATS DEBUG] done-länkar:', doneLinks.map(l => ({ id: l.id.slice(0,8), status: l.status, updated_at: l.updated_at, title: l.title.slice(0,30) })))
   const stats = {
     addedThisWeek: links.filter(l => new Date(l.created_at) >= weekAgo).length,
-    completedThisWeek: links.filter(l => l.status === 'done' && new Date(l.updated_at) >= weekAgo).length,
+    completedThisWeek: doneThisWeek.length,
     totalLinks: links.length,
   }
 
