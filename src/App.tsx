@@ -402,7 +402,7 @@ function App() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <header className="mb-8 -mx-4 -mt-8 px-4 py-6 bg-gradient-to-b from-sky-50 to-stone-50">
           <button
-            onClick={() => setLandingMode(true)}
+            onClick={() => { loadLinks(); setLandingMode(true) }}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <img src="/sixten-icon-192.png" alt="Hem" className="w-10 h-10" />
