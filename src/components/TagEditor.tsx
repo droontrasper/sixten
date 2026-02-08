@@ -1,7 +1,7 @@
 /**
  * Komponent för att visa och redigera taggar.
  * AI-föreslagna taggar visas med outline, manuella med solid bakgrund.
- * Stöd för autocomplete med befintliga taggar.
+ * Stöd för autocomplete med befintliga taggar och favorittaggar.
  */
 import { useState } from 'react'
 import type { Tag } from '../types'
@@ -12,12 +12,14 @@ interface TagEditorProps {
   onAdd?: (tagName: string) => void
   onRemove?: (tagId: string) => void
   allTags?: string[]
+  favoriteTags?: string[]
+  onToggleFavorite?: (tagName: string) => void
 }
 
 const MAX_TAGS = 10
 const MAX_TAG_LENGTH = 20
 
-export function TagEditor({ tags, editable = false, onAdd, onRemove, allTags = [] }: TagEditorProps) {
+export function TagEditor({ tags, editable = false, onAdd, onRemove, allTags = [], favoriteTags = [], onToggleFavorite }: TagEditorProps) {
   const [newTag, setNewTag] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -42,15 +44,34 @@ export function TagEditor({ tags, editable = false, onAdd, onRemove, allTags = [
 
   function handleInputChange(value: string) {
     setNewTag(value.slice(0, MAX_TAG_LENGTH))
-    setShowSuggestions(value.trim().length > 0)
+    setShowSuggestions(true)
   }
 
-  const suggestions = newTag.trim()
-    ? allTags.filter(tag =>
-        tag.toLowerCase().includes(newTag.toLowerCase()) &&
-        !tags.some(t => t.tag_name.toLowerCase() === tag.toLowerCase())
-      ).slice(0, 5)
-    : []
+  const alreadyAdded = new Set(tags.map(t => t.tag_name.toLowerCase()))
+
+  const suggestions = (() => {
+    const search = newTag.trim().toLowerCase()
+
+    if (search) {
+      // Sök: favoriter först, sedan vanliga
+      const matchingFavorites = favoriteTags
+        .filter(tag => tag.toLowerCase().includes(search) && !alreadyAdded.has(tag.toLowerCase()))
+      const matchingOthers = allTags
+        .filter(tag =>
+          tag.toLowerCase().includes(search) &&
+          !alreadyAdded.has(tag.toLowerCase()) &&
+          !favoriteTags.includes(tag)
+        )
+      return { favorites: matchingFavorites.slice(0, 5), others: matchingOthers.slice(0, 5) }
+    } else {
+      // Tomt fält: visa bara favoriter som snabbval
+      const availableFavorites = favoriteTags
+        .filter(tag => !alreadyAdded.has(tag.toLowerCase()))
+      return { favorites: availableFavorites, others: [] as string[] }
+    }
+  })()
+
+  const hasSuggestions = suggestions.favorites.length > 0 || suggestions.others.length > 0
 
   if (tags.length === 0 && !editable) {
     return null
@@ -87,7 +108,7 @@ export function TagEditor({ tags, editable = false, onAdd, onRemove, allTags = [
             value={newTag}
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            onFocus={() => { if (newTag.trim()) setShowSuggestions(true) }}
+            onFocus={() => setShowSuggestions(true)}
             onBlur={() => {
               // Fördröj så klick på suggestion hinner registreras
               setTimeout(() => {
@@ -101,20 +122,64 @@ export function TagEditor({ tags, editable = false, onAdd, onRemove, allTags = [
                        focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200
                        w-28"
           />
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-lg z-10 overflow-hidden">
-              {suggestions.map(suggestion => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    handleAddTag(suggestion)
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm text-stone-700 transition-colors"
-                >
-                  {suggestion}
-                </button>
+          {showSuggestions && hasSuggestions && (
+            <div className="absolute top-full left-0 mt-1 w-52 bg-white border border-stone-200 rounded-lg shadow-lg z-10 overflow-hidden">
+              {suggestions.favorites.map(suggestion => (
+                <div key={suggestion} className="flex items-center">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      handleAddTag(suggestion)
+                    }}
+                    className="flex-1 text-left px-3 py-2 hover:bg-blue-50 text-sm text-stone-700 transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                  {onToggleFavorite && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        onToggleFavorite(suggestion)
+                      }}
+                      className="px-2 py-2 text-amber-400 hover:text-amber-500 transition-colors"
+                      aria-label="Ta bort från favoriter"
+                    >
+                      ★
+                    </button>
+                  )}
+                </div>
+              ))}
+              {suggestions.favorites.length > 0 && suggestions.others.length > 0 && (
+                <div className="border-t border-stone-100" />
+              )}
+              {suggestions.others.map(suggestion => (
+                <div key={suggestion} className="flex items-center">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      handleAddTag(suggestion)
+                    }}
+                    className="flex-1 text-left px-3 py-2 hover:bg-blue-50 text-sm text-stone-700 transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                  {onToggleFavorite && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        onToggleFavorite(suggestion)
+                      }}
+                      className="px-2 py-2 text-stone-300 hover:text-amber-400 transition-colors"
+                      aria-label="Lägg till som favorit"
+                    >
+                      ☆
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}

@@ -10,15 +10,22 @@
 import type { Link } from '../types'
 import { AddLink, type AddLinkResult } from './AddLink'
 
+interface LandingStats {
+  addedThisWeek: number
+  completedThisWeek: number
+  totalLinks: number
+}
+
 interface LandingProps {
   latestLink: Link | null
+  stats: LandingStats
   onAdd: (result: AddLinkResult) => Promise<void>
   onGoToSorting: () => void
   onGoToActive: () => void
   isLoading: boolean
 }
 
-export function Landing({ latestLink, onAdd, onGoToSorting, onGoToActive, isLoading }: LandingProps) {
+export function Landing({ latestLink, stats, onAdd, onGoToSorting, onGoToActive, isLoading }: LandingProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-stone-100 flex items-center justify-center px-4">
       <div className="w-full max-w-xl">
@@ -73,6 +80,24 @@ export function Landing({ latestLink, onAdd, onGoToSorting, onGoToActive, isLoad
                 {latestLink.content_type}
               </span>
               <span>{latestLink.estimated_minutes} min</span>
+            </div>
+          </div>
+        )}
+
+        {/* Statistik */}
+        {(stats.addedThisWeek > 0 || stats.completedThisWeek > 0 || stats.totalLinks > 0) && (
+          <div className="flex justify-center gap-8 py-4 mb-6 text-stone-400 text-sm">
+            <div className="text-center">
+              <span className="block text-lg font-semibold text-stone-600">+{stats.addedThisWeek}</span>
+              <span>denna vecka</span>
+            </div>
+            <div className="text-center">
+              <span className="block text-lg font-semibold text-emerald-600">{stats.completedThisWeek}</span>
+              <span>klara</span>
+            </div>
+            <div className="text-center">
+              <span className="block text-lg font-semibold text-stone-600">{stats.totalLinks}</span>
+              <span>totalt</span>
             </div>
           </div>
         )}

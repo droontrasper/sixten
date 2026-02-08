@@ -179,6 +179,43 @@ export async function updateTags(
   return data || []
 }
 
+export async function getFavoriteTags(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('favorite_tags')
+    .select('tag_name')
+    .eq('user_id', DEFAULT_USER_ID)
+    .order('tag_name')
+
+  if (error) {
+    throw new Error(`Kunde inte hämta favorittaggar: ${error.message}`)
+  }
+
+  return (data || []).map(d => d.tag_name)
+}
+
+export async function addFavoriteTag(tagName: string): Promise<void> {
+  const { error } = await supabase
+    .from('favorite_tags')
+    .insert({ user_id: DEFAULT_USER_ID, tag_name: tagName })
+
+  if (error) {
+    if (error.code === '23505') return // Already exists, ignore
+    throw new Error(`Kunde inte spara favorittagg: ${error.message}`)
+  }
+}
+
+export async function removeFavoriteTag(tagName: string): Promise<void> {
+  const { error } = await supabase
+    .from('favorite_tags')
+    .delete()
+    .eq('user_id', DEFAULT_USER_ID)
+    .eq('tag_name', tagName)
+
+  if (error) {
+    throw new Error(`Kunde inte ta bort favorittagg: ${error.message}`)
+  }
+}
+
 export async function getTagsForLink(linkId: string): Promise<Tag[]> {
   const { data, error } = await supabase
     .from('link_tags')

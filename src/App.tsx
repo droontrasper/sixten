@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react'
 import type { Link, LinkStatus } from './types'
-import { getLinks, createLink, updateLinkStatus, deleteLink, saveTags, updateTags } from './services/supabase'
+import { getLinks, createLink, updateLinkStatus, deleteLink, saveTags, updateTags, getFavoriteTags, addFavoriteTag, removeFavoriteTag } from './services/supabase'
 import { fetchPageContent } from './services/jina'
 import { analyzeContent, analyzeImage } from './services/claude'
 import { AddLink, type AddLinkResult } from './components/AddLink'
@@ -27,10 +27,35 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [dialogLink, setDialogLink] = useState<Link | null>(null)
   const [landingMode, setLandingMode] = useState(true)
+  const [favoriteTags, setFavoriteTags] = useState<string[]>([])
 
   useEffect(() => {
     loadLinks()
+    loadFavoriteTags()
   }, [])
+
+  async function loadFavoriteTags() {
+    try {
+      const tags = await getFavoriteTags()
+      setFavoriteTags(tags)
+    } catch {
+      // Ignorera fel vid laddning av favoriter (tabell kanske inte finns ännu)
+    }
+  }
+
+  async function handleToggleFavorite(tagName: string) {
+    try {
+      if (favoriteTags.includes(tagName)) {
+        await removeFavoriteTag(tagName)
+        setFavoriteTags(prev => prev.filter(t => t !== tagName))
+      } else {
+        await addFavoriteTag(tagName)
+        setFavoriteTags(prev => [...prev, tagName].sort())
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kunde inte uppdatera favorittagg')
+    }
+  }
 
   async function loadLinks() {
     try {
@@ -346,11 +371,21 @@ function App() {
   // Hämta senast tillagda länk för landing page
   const latestLink = links.length > 0 ? links[0] : null
 
+  // Beräkna statistik för landing page
+  const weekAgo = new Date()
+  weekAgo.setDate(weekAgo.getDate() - 7)
+  const stats = {
+    addedThisWeek: links.filter(l => new Date(l.created_at) >= weekAgo).length,
+    completedThisWeek: links.filter(l => l.status === 'done' && new Date(l.updated_at) >= weekAgo).length,
+    totalLinks: links.length,
+  }
+
   // Visa landing page om landingMode är true
   if (landingMode) {
     return (
       <Landing
         latestLink={latestLink}
+        stats={stats}
         onAdd={handleAddLink}
         onGoToSorting={() => setLandingMode(false)}
         onGoToActive={() => {
@@ -425,6 +460,8 @@ function App() {
               onAddTag={handleAddTag}
               onRemoveTag={handleRemoveTag}
               allTags={allTags}
+              favoriteTags={favoriteTags}
+              onToggleFavorite={handleToggleFavorite}
             />
           )}
           {activeTab === 'active' && (

@@ -15,6 +15,8 @@ interface LinkCardProps {
   onAddTag?: (tagName: string) => void
   onRemoveTag?: (tagId: string) => void
   allTags?: string[]
+  favoriteTags?: string[]
+  onToggleFavorite?: (tagName: string) => void
 }
 
 const typeLabels: Record<string, string> = {
@@ -29,7 +31,7 @@ const typeColors: Record<string, string> = {
   podd: 'bg-amber-100 text-amber-700',
 }
 
-export function LinkCard({ link, actions, tagsEditable = false, onAddTag, onRemoveTag, allTags }: LinkCardProps) {
+export function LinkCard({ link, actions, tagsEditable = false, onAddTag, onRemoveTag, allTags, favoriteTags, onToggleFavorite }: LinkCardProps) {
   const [showImageModal, setShowImageModal] = useState(false)
   const isImageLink = link.url.startsWith('image://')
 
@@ -100,6 +102,8 @@ export function LinkCard({ link, actions, tagsEditable = false, onAddTag, onRemo
           onAdd={onAddTag}
           onRemove={onRemoveTag}
           allTags={allTags}
+          favoriteTags={favoriteTags}
+          onToggleFavorite={onToggleFavorite}
         />
       ) : null}
 
