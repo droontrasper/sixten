@@ -132,7 +132,7 @@ export function TagEditor({ tags, editable = false, onAdd, onRemove, allTags = [
                       e.preventDefault()
                       handleAddTag(suggestion)
                     }}
-                    className="flex-1 text-left px-3 py-2 hover:bg-blue-50 text-sm text-stone-700 transition-colors"
+                    className="flex-1 text-left px-3 py-2 hover:bg-blue-50 text-sm text-stone-700 capitalize transition-colors"
                   >
                     {suggestion}
                   </button>
@@ -162,7 +162,7 @@ export function TagEditor({ tags, editable = false, onAdd, onRemove, allTags = [
                       e.preventDefault()
                       handleAddTag(suggestion)
                     }}
-                    className="flex-1 text-left px-3 py-2 hover:bg-blue-50 text-sm text-stone-700 transition-colors"
+                    className="flex-1 text-left px-3 py-2 hover:bg-blue-50 text-sm text-stone-700 capitalize transition-colors"
                   >
                     {suggestion}
                   </button>

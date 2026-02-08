@@ -196,7 +196,7 @@ export async function getFavoriteTags(): Promise<string[]> {
 export async function addFavoriteTag(tagName: string): Promise<void> {
   const { error } = await supabase
     .from('favorite_tags')
-    .insert({ user_id: DEFAULT_USER_ID, tag_name: tagName })
+    .insert({ user_id: DEFAULT_USER_ID, tag_name: tagName.toLowerCase() })
 
   if (error) {
     if (error.code === '23505') return // Already exists, ignore
@@ -209,7 +209,7 @@ export async function removeFavoriteTag(tagName: string): Promise<void> {
     .from('favorite_tags')
     .delete()
     .eq('user_id', DEFAULT_USER_ID)
-    .eq('tag_name', tagName)
+    .eq('tag_name', tagName.toLowerCase())
 
   if (error) {
     throw new Error(`Kunde inte ta bort favorittagg: ${error.message}`)

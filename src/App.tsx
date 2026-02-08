@@ -56,13 +56,14 @@ function App() {
   }
 
   async function handleToggleFavorite(tagName: string) {
+    const normalized = tagName.toLowerCase()
     try {
-      if (favoriteTags.includes(tagName)) {
-        await removeFavoriteTag(tagName)
-        setFavoriteTags(prev => prev.filter(t => t !== tagName))
+      if (favoriteTags.includes(normalized)) {
+        await removeFavoriteTag(normalized)
+        setFavoriteTags(prev => prev.filter(t => t !== normalized))
       } else {
-        await addFavoriteTag(tagName)
-        setFavoriteTags(prev => [...prev, tagName].sort())
+        await addFavoriteTag(normalized)
+        setFavoriteTags(prev => [...prev, normalized].sort())
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kunde inte uppdatera favorittagg')

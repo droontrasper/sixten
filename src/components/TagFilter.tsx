@@ -37,7 +37,7 @@ export function TagFilter({ links, activeFilter, onFilterChange }: TagFilterProp
         <span className="text-xs">{isExpanded ? '▼' : '▶'}</span>
         <span>Filtrera på tagg</span>
         {activeFilter && (
-          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
+          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs capitalize">
             {activeFilter}
           </span>
         )}
@@ -60,7 +60,7 @@ export function TagFilter({ links, activeFilter, onFilterChange }: TagFilterProp
               <button
                 key={tag}
                 onClick={() => onFilterChange(tag)}
-                className={`px-3 py-1 rounded-full text-sm transition-colors
+                className={`px-3 py-1 rounded-full text-sm capitalize transition-colors
                   ${activeFilter === tag
                     ? 'bg-blue-500 text-white'
                     : 'bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200'
